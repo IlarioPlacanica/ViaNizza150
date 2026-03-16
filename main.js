@@ -96,21 +96,73 @@ let isPointerDown = false;
 let startX = 0;
 let startY = 0;
 
+// ===== AGGIUNTO: pinch zoom =====
+const activePointers = new Map();
+let isPinching = false;
+let lastPinchDistance = 0;
+
+function getPointerDistance() {
+    if (activePointers.size < 2) return 0;
+    const points = Array.from(activePointers.values());
+    const dx = points[0].x - points[1].x;
+    const dy = points[0].y - points[1].y;
+    return Math.hypot(dx, dy);
+}
+// ===== FINE AGGIUNTA =====
+
 const canvas = viewer.scene.canvas;
 canvas.style.touchAction = "none";
 
 canvas.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) return;
+    activePointers.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY
+    });
 
-    isPointerDown = true;
-    startX = event.clientX;
-    startY = event.clientY;
+    if (activePointers.size === 2) {
+        isPinching = true;
+        isPointerDown = false;
+        lastPinchDistance = getPointerDistance();
+    }
+
+    if (event.pointerType !== "touch") {
+        if (event.button !== 0) return;
+
+        isPointerDown = true;
+        startX = event.clientX;
+        startY = event.clientY;
+    }
 
     canvas.setPointerCapture(event.pointerId);
     event.preventDefault();
 });
 
 canvas.addEventListener("pointermove", (event) => {
+    if (activePointers.has(event.pointerId)) {
+        activePointers.set(event.pointerId, {
+            x: event.clientX,
+            y: event.clientY
+        });
+    }
+
+    // ===== AGGIUNTO: pinch zoom =====
+    if (isPinching && activePointers.size >= 2) {
+        const currentDistance = getPointerDistance();
+        const pinchDelta = currentDistance - lastPinchDistance;
+
+        if (Math.abs(pinchDelta) > 2) {
+            const pinchSensitivity = 1.5;
+            orbitRange -= pinchDelta * pinchSensitivity;
+            orbitRange = Cesium.Math.clamp(orbitRange, minRange, maxRange);
+            updateOrbitCamera();
+            lastPinchDistance = currentDistance;
+        }
+
+        event.preventDefault();
+        return;
+    }
+    // ===== FINE AGGIUNTA =====
+
     if (!isPointerDown) return;
 
     const deltaX = event.clientX - startX;
@@ -130,15 +182,34 @@ canvas.addEventListener("pointermove", (event) => {
 });
 
 canvas.addEventListener("pointerup", (event) => {
+    activePointers.delete(event.pointerId);
+
+    // ===== AGGIUNTO: gestione fine pinch =====
+    if (activePointers.size < 2) {
+        isPinching = false;
+        lastPinchDistance = 0;
+    }
+    // ===== FINE AGGIUNTA =====
+
     isPointerDown = false;
     event.preventDefault();
 });
 
-canvas.addEventListener("pointercancel", () => {
+canvas.addEventListener("pointercancel", (event) => {
+    activePointers.delete(event.pointerId);
+    if (activePointers.size < 2) {
+        isPinching = false;
+        lastPinchDistance = 0;
+    }
     isPointerDown = false;
 });
 
-canvas.addEventListener("lostpointercapture", () => {
+canvas.addEventListener("lostpointercapture", (event) => {
+    activePointers.delete(event.pointerId);
+    if (activePointers.size < 2) {
+        isPinching = false;
+        lastPinchDistance = 0;
+    }
     isPointerDown = false;
 });
 
