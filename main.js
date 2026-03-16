@@ -1016,10 +1016,6 @@ viewer.entities.add({
     properties: {
         stato: "AREA COMUNE",
         mq: 36.434,
-        reddito: "-",
-        scadenzaContratto: "-",
-        destinazioneUso: "-",
-        categoriaConduttore: "-",
         sfittaNonLocabile: 36.434,
         categoria: "verde"
     }
@@ -1047,10 +1043,6 @@ viewer.entities.add({
     properties: {
         stato: "AREA COMUNE",
         mq: 36.434,
-        reddito: "-",
-        scadenzaContratto: "-",
-        destinazioneUso: "-",
-        categoriaConduttore: "-",
         sfittaNonLocabile: 36.434,
         categoria: "verde"
     }
