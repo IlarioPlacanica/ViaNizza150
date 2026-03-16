@@ -96,7 +96,7 @@ body {
 
 .top-header-meta {
     max-width: 360px;
-    font-size: 17px;
+    font-size: 15px;
     line-height: 1.5;
     text-align: right;
     color: var(--text-secondary);
@@ -168,6 +168,7 @@ body {
     padding: 14px 16px;
     border-radius: var(--radius-pill);
     box-sizing: border-box;
+    max-width: calc(100vw - 40px);
 }
 
     .filter-bar button {
@@ -412,7 +413,7 @@ body {
 
 /* ===== RESPONSIVE ===== */
 
-@media (max-width: 1100px) {
+@media (max-width: 1180px) {
     .top-header {
         width: min(860px, calc(100vw - 220px));
     }
@@ -424,9 +425,15 @@ body {
     .info-panel {
         width: 360px;
     }
+
+    .filter-bar button {
+        height: 50px;
+        padding: 0 16px;
+        font-size: 15px;
+    }
 }
 
-@media (max-width: 840px) {
+@media (max-width: 920px) {
     .top-header {
         top: 14px;
         left: 14px;
@@ -438,31 +445,44 @@ body {
 
     .top-header-inner {
         min-height: auto;
-        padding: 16px 18px;
+        padding: 14px 16px;
         flex-direction: column;
         align-items: flex-start;
-        gap: 10px;
+        gap: 8px;
+    }
+
+    .top-header-title {
+        font-size: 22px;
     }
 
     .top-header-meta {
         max-width: none;
         text-align: left;
+        font-size: 14px;
     }
 
     .legend-panel {
-        top: 120px;
+        top: 106px;
         left: 14px;
-        width: calc(100vw - 28px);
-        max-width: 340px;
+        width: 250px;
+        padding: 16px;
+    }
+
+        .legend-panel h3 {
+            margin-bottom: 12px;
+            font-size: 12px;
+        }
+
+    .legend-item {
+        padding: 8px 0;
+        font-size: 14px;
     }
 
     .info-panel {
-        top: auto;
+        top: 106px;
         right: 14px;
-        left: 14px;
-        bottom: 84px;
-        width: auto;
-        max-height: 46vh;
+        width: min(360px, calc(100vw - 292px));
+        max-height: calc(100vh - 196px);
     }
 
     .filter-bar {
@@ -474,36 +494,170 @@ body {
         overflow-x: auto;
         justify-content: flex-start;
         padding: 10px;
+        gap: 10px;
+        max-width: none;
+        scrollbar-width: none;
     }
+
+        .filter-bar::-webkit-scrollbar {
+            display: none;
+        }
 
         .filter-bar button {
             flex: 0 0 auto;
+            height: 46px;
+            padding: 0 16px;
+            font-size: 14px;
         }
 }
 
-@media (max-width: 520px) {
-    .top-header-title {
-        font-size: 22px;
+@media (max-width: 680px) {
+    .top-header {
+        top: 10px;
+        left: 10px;
+        right: 10px;
     }
 
-    .legend-panel,
-    .info-panel {
-        border-radius: 18px;
+    .top-header-inner {
+        padding: 12px 14px;
+    }
+
+    .ui-eyebrow,
+    .info-eyebrow {
+        font-size: 10px;
+    }
+
+    .top-header-title {
+        font-size: 20px;
+    }
+
+    .top-header-meta {
+        font-size: 13px;
+        line-height: 1.4;
     }
 
     .legend-panel {
-        padding: 18px;
+        top: 92px;
+        left: 10px;
+        right: 10px;
+        width: auto;
+        max-width: none;
+        padding: 14px;
+        border-radius: 16px;
+    }
+
+        .legend-panel h3 {
+            margin-bottom: 10px;
+        }
+
+    .legend-item {
+        font-size: 13px;
+        padding: 7px 0;
+    }
+
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 5px;
     }
 
     .info-panel {
-        padding: 18px;
+        top: auto;
+        left: 10px;
+        right: 10px;
+        bottom: 74px;
+        width: auto;
+        max-height: 40vh;
+        padding: 16px;
+        border-radius: 16px;
     }
 
         .info-panel h2 {
-            font-size: 24px;
+            font-size: 22px;
         }
+
+    #closePanel {
+        top: 10px;
+        right: 10px;
+        width: 34px;
+        height: 34px;
+    }
 
     .category-summary {
         grid-template-columns: 1fr;
+    }
+
+    .summary-card strong {
+        font-size: 20px;
+    }
+
+    .info-row {
+        gap: 12px;
+    }
+
+        .info-row span,
+        .info-row strong {
+            font-size: 13px;
+        }
+
+    .filter-bar {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        padding: 8px;
+        gap: 8px;
+        border-radius: 18px;
+    }
+
+        .filter-bar button {
+            height: 42px;
+            padding: 0 14px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+}
+
+@media (max-width: 430px) {
+    .top-header-title {
+        font-size: 18px;
+    }
+
+    .top-header-meta {
+        font-size: 12px;
+    }
+
+    .legend-panel {
+        top: 88px;
+        padding: 12px;
+    }
+
+        .legend-panel h3 {
+            font-size: 11px;
+        }
+
+    .legend-item {
+        font-size: 12px;
+        gap: 10px;
+    }
+
+    .info-panel {
+        bottom: 68px;
+        max-height: 38vh;
+        padding: 14px;
+    }
+
+        .info-panel h2 {
+            font-size: 20px;
+        }
+
+    .lot-card,
+    .summary-card {
+        padding: 12px;
+    }
+
+    .filter-bar button {
+        height: 40px;
+        padding: 0 12px;
+        font-size: 12px;
     }
 }
