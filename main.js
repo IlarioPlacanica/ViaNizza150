@@ -938,7 +938,7 @@ function isTabletLandscapeViewport() {
 function getLotLabelAppearance() {
     if (isTabletLandscapeViewport()) {
       return {
-        font: "800 23px Inter, system-ui, sans-serif",
+        font: "900 25px Inter, system-ui, sans-serif",
         outlineWidth: 1,
         backgroundPadding: new Cesium.Cartesian2(0, 0),
         scaleByDistance: new Cesium.NearFarScalar(180.0, 1.15, 2200.0, 0.92)
