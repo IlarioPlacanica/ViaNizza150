@@ -946,9 +946,9 @@ function getLotLabelAppearance() {
     }
 
     return {
-        font: "700 21px Inter, system-ui, sans-serif",
-        outlineWidth: 4,
-        backgroundPadding: new Cesium.Cartesian2(8, 5),
+        font: "700 25px Inter, system-ui, sans-serif",
+        outlineWidth: 1,
+        backgroundPadding: new Cesium.Cartesian2(0, 0),
         scaleByDistance: new Cesium.NearFarScalar(180.0, 1.15, 2200.0, 0.92)
     };
 }
@@ -1017,10 +1017,10 @@ function buildLotLabelEntity(name, entities) {
         label: {
             text: name,
             font: appearance.font,
-            fillColor: Cesium.Color.BLACK,
-       /*   outlineColor: Cesium.Color.fromCssColorString("#0b0d10"),
-            outlineWidth: appearance.outlineWidth,  */
-            style: Cesium.LabelStyle.FILL,
+	    fillColor: Cesium.Color.fromCssColorString("#F7F4EC"),
+            outlineColor: Cesium.Color.fromCssColorString("rgba(10, 10, 10, 0.35)"),
+            outlineWidth: appearance.outlineWidth,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             showBackground: false,
         /*  backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.56)"), */
             backgroundPadding: appearance.backgroundPadding,
