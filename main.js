@@ -392,14 +392,14 @@ function getSfittaNonLocabileBreakdownItems() {
         })
         .filter(item => item.value > 0);
 
-    const verdi = getLottiByCategory("verde")
+    const areaComuni = viewer.entities.values
+        .filter(entity => entity.id === "lotto Aree_Comuni")
         .map(entity => {
             const value = toNumberOrZero(getProp(entity, "mq"));
             return { entity, value };
-        })
-        .filter(item => item.value > 0);
+        });
 
-    return [...azzurri, ...verdi];
+    return [...azzurri, ...areaComuni];
 }
 
 function getSfittaNonLocabileBreakdownLabel(entity) {
