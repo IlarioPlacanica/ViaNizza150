@@ -937,12 +937,12 @@ function isTabletLandscapeViewport() {
 
 function getLotLabelAppearance() {
     if (isTabletLandscapeViewport()) {
-        return {
-            font: "800 17px Inter, system-ui, sans-serif",
-            outlineWidth: 3,
-            backgroundPadding: new Cesium.Cartesian2(5, 2),
-            scaleByDistance: new Cesium.NearFarScalar(180.0, 1.02, 2200.0, 0.84)
-        };
+      return {
+        font: "800 25px Inter, system-ui, sans-serif",
+        outlineWidth: 1,
+        backgroundPadding: new Cesium.Cartesian2(0, 0),
+        scaleByDistance: new Cesium.NearFarScalar(180.0, 1.15, 2200.0, 0.92)
+      };
     }
 
     return {
@@ -1017,10 +1017,8 @@ function buildLotLabelEntity(name, entities) {
         label: {
             text: name,
             font: appearance.font,
-	    fillColor: Cesium.Color.fromCssColorString("#F7F4EC"),
-            outlineColor: Cesium.Color.fromCssColorString("rgba(10, 10, 10, 0.35)"),
-            outlineWidth: appearance.outlineWidth,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+	    fillColor: Cesium.Color.BLACK,
+            style: Cesium.LabelStyle.FILL,
             showBackground: false,
         /*  backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.56)"), */
             backgroundPadding: appearance.backgroundPadding,
