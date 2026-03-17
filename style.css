@@ -203,8 +203,9 @@ body {
     position: absolute;
     top: 110px;
     right: 20px;
+    bottom: 110px;
     width: 400px;
-    max-height: calc(100vh - 130px);
+    max-height: none;
     overflow-y: auto;
     background: var(--panel-bg-strong);
     color: var(--text-main);
