@@ -1014,7 +1014,7 @@ function buildLotLabelEntity(name, entities) {
         label: {
             text: name,
             font: appearance.font,
-            fillColor: Cesium.Color.WHITE,
+            fillColor: Cesium.Color.BLACK,
        /*   outlineColor: Cesium.Color.fromCssColorString("#0b0d10"),
             outlineWidth: appearance.outlineWidth,  */
             style: Cesium.LabelStyle.FILL,
