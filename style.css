@@ -81,14 +81,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    grid-column: 2;
     justify-self: center;
-    min-width: 72px;
 }
 
 .top-header-icon {
-    width: 52px;
-    height: 52px;
+    width: 60px;
+    height: 60px;
     object-fit: contain;
     display: block;
     filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.28));
@@ -115,7 +113,6 @@ body {
 .top-header-meta {
     max-width: 360px;
     justify-self: end;
-    margin-left: auto;
     font-size: 15px;
     line-height: 1.5;
     text-align: right;
@@ -202,6 +199,8 @@ body {
         font-size: 17px;
         font-weight: 600;
         white-space: nowrap;
+        min-width: 0;
+        flex-shrink: 1;
         transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
     }
 
@@ -217,22 +216,22 @@ body {
             color: var(--text-main);
         }
 
-        .filter-bar button.filter-inverted {
-            background: rgba(255, 255, 255, 0.78);
-            border-color: rgba(255, 255, 255, 0.26);
-            color: rgba(0, 0, 0, 0.82);
+    .filter-bar button.filter-inverted {
+        background: rgba(255, 255, 255, 0.78);
+        border-color: rgba(255, 255, 255, 0.26);
+        color: rgba(0, 0, 0, 0.82);
+    }
+
+        .filter-bar button.filter-inverted:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.88);
+            color: rgba(0, 0, 0, 0.92);
         }
 
-            .filter-bar button.filter-inverted:hover:not(.active) {
-                background: rgba(255, 255, 255, 0.88);
-                color: rgba(0, 0, 0, 0.92);
-            }
-
-            .filter-bar button.filter-inverted.active {
-                background: rgba(255, 255, 255, 0.92);
-                border-color: rgba(255, 255, 255, 0.34);
-                color: rgba(0, 0, 0, 0.88);
-            }
+        .filter-bar button.filter-inverted.active {
+            background: rgba(255, 255, 255, 0.92);
+            border-color: rgba(255, 255, 255, 0.34);
+            color: rgba(0, 0, 0, 0.88);
+        }
 
 /* ===== INFO PANEL ===== */
 
@@ -478,11 +477,161 @@ body {
         padding: 12px 14px;
     }
 
-        .filter-bar button {
-            height: 48px;
-            padding: 0 15px;
-            font-size: 14px;
-        }
+    .filter-bar button {
+        height: 48px;
+        padding: 0 15px;
+        font-size: 14px;
+    }
+}
+
+
+@media (orientation: landscape) and (min-width: 1024px) and (max-width: 1400px) and (max-height: 950px) {
+    :root {
+        --tablet-landscape-gap: clamp(18px, 1.7vw, 22px);
+        --tablet-landscape-header-top: clamp(18px, 1.7vw, 22px);
+        --tablet-landscape-header-shell-height: clamp(80px, 11vh, 88px);
+        --tablet-landscape-filter-bottom: clamp(18px, 1.7vw, 22px);
+        --tablet-landscape-filter-shell-height: clamp(58px, 7.5vh, 64px);
+    }
+
+    .top-header {
+        top: var(--tablet-landscape-header-top);
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: min(1120px, calc(100vw - (var(--tablet-landscape-gap) * 2)));
+        border-radius: 32px;
+    }
+
+    .top-header-inner {
+        min-height: var(--tablet-landscape-header-shell-height);
+        padding: 0 clamp(20px, 2vw, 26px);
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        gap: clamp(14px, 1.2vw, 18px);
+    }
+
+    .ui-eyebrow,
+    .info-eyebrow {
+        font-size: clamp(10px, 0.95vw, 11px);
+    }
+
+    .top-header-title {
+        margin-top: 4px;
+        font-size: clamp(22px, 2.3vw, 30px);
+    }
+
+    .top-header-center {
+        width: auto;
+    }
+
+    .top-header-icon {
+        width: clamp(70px, 5.8vw, 82px);
+        height: clamp(70px, 5.8vw, 82px);
+    }
+
+    .top-header-meta {
+        max-width: clamp(250px, 23vw, 330px);
+        font-size: clamp(13px, 1.2vw, 16px);
+    }
+
+    .legend-panel,
+    .info-panel {
+        top: calc(var(--tablet-landscape-header-top) + var(--tablet-landscape-header-shell-height) + var(--tablet-landscape-gap));
+    }
+
+    .legend-panel {
+        left: var(--tablet-landscape-gap);
+        width: clamp(230px, 19vw, 250px);
+        padding: clamp(16px, 1.5vw, 18px);
+    }
+
+    .legend-panel h3 {
+        margin-bottom: 12px;
+        font-size: clamp(12px, 0.95vw, 13px);
+    }
+
+    .legend-item {
+        gap: 10px;
+        padding: 8px 0;
+        font-size: clamp(13px, 1vw, 15px);
+    }
+
+    .legend-color {
+        width: 18px;
+        height: 18px;
+    }
+
+    .info-panel {
+        right: var(--tablet-landscape-gap);
+        bottom: calc(var(--tablet-landscape-filter-bottom) + var(--tablet-landscape-filter-shell-height) + var(--tablet-landscape-gap));
+        width: clamp(220px, 18.5vw, 242px);
+        padding: clamp(16px, 1.5vw, 18px);
+        border-radius: 22px;
+    }
+
+    .info-panel h2 {
+        margin-bottom: 12px;
+        font-size: clamp(24px, 2vw, 28px);
+    }
+
+    .info-panel-header {
+        margin-bottom: 12px;
+        padding-right: 34px;
+    }
+
+    #infoPanelBody {
+        gap: 10px;
+    }
+
+    .category-summary {
+        gap: 10px;
+    }
+
+    .summary-card,
+    .lot-card {
+        padding: 12px;
+    }
+
+    .summary-card strong {
+        font-size: clamp(18px, 1.7vw, 22px);
+    }
+
+    .lot-card-title {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .info-row {
+        gap: 12px;
+        padding-bottom: 8px;
+    }
+
+    .info-row span,
+    .info-row strong {
+        font-size: 12px;
+        line-height: 1.35;
+    }
+
+    .filter-bar {
+        left: var(--tablet-landscape-gap);
+        right: var(--tablet-landscape-gap);
+        bottom: var(--tablet-landscape-filter-bottom);
+        transform: none;
+        width: auto;
+        max-width: none;
+        padding: clamp(7px, 0.8vw, 9px);
+        gap: clamp(6px, 0.65vw, 8px);
+        justify-content: center;
+        overflow: hidden;
+        border-radius: 26px;
+    }
+
+    .filter-bar button {
+        height: clamp(42px, 5.4vh, 46px);
+        padding: 0 clamp(9px, 0.85vw, 12px);
+        font-size: clamp(9.8px, 0.78vw, 11px);
+        letter-spacing: -0.01em;
+    }
 }
 
 @media (max-width: 920px) {
@@ -815,164 +964,5 @@ body {
             height: 34px;
             padding: 0 10px;
             font-size: 10px;
-        }
-}
-
-
-@media (min-width: 768px) and (max-width: 1180px) and (orientation: landscape) {
-    .top-header {
-        top: 12px;
-        left: 12px;
-        right: 12px;
-        transform: none;
-        width: auto;
-        border-radius: var(--radius-lg);
-    }
-
-    .top-header-inner {
-        min-height: 64px;
-        padding: 12px 18px;
-        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-        gap: 14px;
-    }
-
-    .top-header-copy,
-    .top-header-meta {
-        max-width: calc(50% - 54px);
-    }
-
-    .top-header-title {
-        font-size: 21px;
-    }
-
-    .top-header-meta {
-        font-size: 13px;
-        line-height: 1.35;
-    }
-
-    .top-header-center {
-        min-width: 60px;
-    }
-
-    .top-header-icon {
-        width: 44px;
-        height: 44px;
-    }
-
-    .legend-panel {
-        top: 94px;
-        left: 12px;
-        width: 220px;
-        padding: 14px 14px 12px;
-        border-radius: 18px;
-    }
-
-        .legend-panel h3 {
-            margin-bottom: 10px;
-            font-size: 11px;
-        }
-
-    .legend-item {
-        gap: 8px;
-        padding: 6px 0;
-        font-size: 12px;
-    }
-
-    .legend-color {
-        width: 13px;
-        height: 13px;
-        border-radius: 4px;
-    }
-
-    .info-panel {
-        top: 94px;
-        right: 12px;
-        bottom: 130px;
-        width: 220px;
-        max-height: calc(100vh - 224px);
-        padding: 14px;
-        border-radius: 18px;
-    }
-
-        .info-panel h2 {
-            font-size: 22px;
-            margin-bottom: 10px;
-        }
-
-        .info-panel p {
-            font-size: 12px;
-            line-height: 1.35;
-        }
-
-    .info-panel-header {
-        margin-bottom: 12px;
-        padding-right: 34px;
-    }
-
-    #closePanel {
-        top: 10px;
-        right: 10px;
-        width: 30px;
-        height: 30px;
-        font-size: 12px;
-    }
-
-    .category-summary {
-        grid-template-columns: 1fr;
-        gap: 8px;
-    }
-
-    .summary-card,
-    .lot-card {
-        padding: 10px;
-        border-radius: 12px;
-    }
-
-        .summary-card strong {
-            font-size: 18px;
-        }
-
-    .lot-card-title {
-        font-size: 13px;
-        margin-bottom: 8px;
-    }
-
-    .info-row {
-        gap: 10px;
-        padding-bottom: 8px;
-    }
-
-        .info-row span,
-        .info-row strong {
-            font-size: 12px;
-            line-height: 1.35;
-        }
-
-    .filter-bar {
-        left: 12px;
-        right: 12px;
-        bottom: 12px;
-        transform: none;
-        width: auto;
-        max-width: none;
-        padding: 6px 8px;
-        gap: 6px;
-        border-radius: 16px;
-        justify-content: flex-start;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scrollbar-width: none;
-    }
-
-        .filter-bar::-webkit-scrollbar {
-            display: none;
-        }
-
-        .filter-bar button {
-            flex: 0 0 auto;
-            height: 36px;
-            padding: 0 10px;
-            font-size: 11px;
-            border-radius: 999px;
         }
 }

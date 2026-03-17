@@ -711,6 +711,8 @@ function showOnlyLotsByIds(ids) {
     getAllLotti().forEach(entity => {
         entity.show = ids.includes(entity.id);
     });
+
+    refreshLotLabelsVisibility();
 }
 
 function renderLotsGroupInfo(ids, title, eyebrow = "Categoria") {
@@ -823,18 +825,24 @@ function showAllLotti() {
     getAllLotti().forEach(entity => {
         entity.show = true;
     });
+
+    refreshLotLabelsVisibility();
 }
 
 function hideAllLotti() {
     getAllLotti().forEach(entity => {
         entity.show = false;
     });
+
+    refreshLotLabelsVisibility();
 }
 
 function showOnlyCategory(categoryName) {
     getAllLotti().forEach(entity => {
         entity.show = getProp(entity, "categoria") === categoryName;
     });
+
+    refreshLotLabelsVisibility();
 }
 
 function setActiveFilter(clickedButton) {
@@ -916,11 +924,10 @@ function getEntityHierarchy(entity) {
         : hierarchyProperty;
 }
 
-function getEntityCenterFromPolygon(entity) {
-    const hierarchy = getEntityHierarchy(entity);
-    const positions = hierarchy?.positions;
+function getCenterFromEntities(entities) {
+    const positions = entities.flatMap(entity => getEntityHierarchy(entity)?.positions || []);
 
-    if (!positions?.length) return null;
+    if (!positions.length) return null;
 
     let lonSum = 0;
     let latSum = 0;
@@ -936,80 +943,81 @@ function getEntityCenterFromPolygon(entity) {
     const averageLon = lonSum / positions.length;
     const averageLat = latSum / positions.length;
 
-    const extrudedHeightProperty = entity.polygon?.extrudedHeight;
-    const extrudedHeight = extrudedHeightProperty?.getValue
-        ? extrudedHeightProperty.getValue(Cesium.JulianDate.now())
-        : extrudedHeightProperty;
+    const extrudedHeights = entities.map(entity => {
+        const extrudedHeightProperty = entity.polygon?.extrudedHeight;
+        return extrudedHeightProperty?.getValue
+            ? extrudedHeightProperty.getValue(Cesium.JulianDate.now())
+            : extrudedHeightProperty;
+    });
 
-    const labelHeight = Math.max(maxHeight, extrudedHeight || 0) + 10;
+    const labelHeight = Math.max(maxHeight, ...extrudedHeights.filter(value => typeof value === "number"), 0) + 10;
 
     return Cesium.Cartesian3.fromRadians(averageLon, averageLat, labelHeight);
 }
 
-function sanitizeLabelId(name) {
-    return String(name)
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "");
-}
+function buildLotLabelEntity(name, entities) {
+    const labelPosition = getCenterFromEntities(entities);
+    if (!labelPosition) return null;
 
-function getRepresentativeLabelEntity(entities) {
-    return entities.find(entity => !String(entity.id).includes(".")) || entities[0];
-}
-
-function addLotLabelGroup(name, entities) {
-    const representative = getRepresentativeLabelEntity(entities);
-    const labelPosition = getEntityCenterFromPolygon(representative);
-
-    if (!labelPosition) return;
+    const primaryEntity = entities[0];
 
     const labelEntity = viewer.entities.add({
-        id: `lotto_label_${sanitizeLabelId(name)}`,
+        id: `label_${primaryEntity.id}`,
+        name,
         position: labelPosition,
+        properties: {
+            isLotLabel: true,
+            linkedEntityId: primaryEntity.id
+        },
         label: {
             text: name,
             font: "700 21px Inter, system-ui, sans-serif",
             fillColor: Cesium.Color.WHITE,
-            outlineColor: Cesium.Color.fromCssColorString("#050608"),
+            outlineColor: Cesium.Color.fromCssColorString("#0b0d10"),
             outlineWidth: 4,
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             showBackground: true,
             backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.64)"),
-            backgroundPadding: new Cesium.Cartesian2(14, 8),
+            backgroundPadding: new Cesium.Cartesian2(8, 5),
             horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
             verticalOrigin: Cesium.VerticalOrigin.CENTER,
-            pixelOffset: new Cesium.Cartesian2(0, -8),
             heightReference: Cesium.HeightReference.NONE,
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 2200.0),
-            scaleByDistance: new Cesium.NearFarScalar(160.0, 1.35, 1800.0, 0.95)
+            scaleByDistance: new Cesium.NearFarScalar(180.0, 1.15, 2200.0, 0.92)
         }
     });
 
-    labelEntity.label.show = new Cesium.CallbackProperty(
-        () => entities.some(entity => entity.show !== false),
-        false
-    );
-    labelEntity.linkedLotIds = entities.map(entity => entity.id);
-    labelEntity.isLotLabel = true;
-    lotLabelEntities.push(labelEntity);
+    labelEntity._linkedEntities = entities;
+    return labelEntity;
 }
 
 function addLabelsToAllLotti() {
     const groups = new Map();
 
-    getAllLotti().forEach(entity => {
-        const name = entity.name?.trim();
-        if (!name) return;
-
-        if (!groups.has(name)) {
-            groups.set(name, []);
+    getAllLotti().forEach((entity) => {
+        if (!entity?.name) return;
+        if (!groups.has(entity.name)) {
+            groups.set(entity.name, []);
         }
-
-        groups.get(name).push(entity);
+        groups.get(entity.name).push(entity);
     });
 
-    groups.forEach((entities, name) => addLotLabelGroup(name, entities));
+    groups.forEach((entities, name) => {
+        const labelEntity = buildLotLabelEntity(name, entities);
+        if (labelEntity) {
+            lotLabelEntities.push(labelEntity);
+        }
+    });
+
+    refreshLotLabelsVisibility();
+}
+
+function refreshLotLabelsVisibility() {
+    lotLabelEntities.forEach((labelEntity) => {
+        const linkedEntities = labelEntity._linkedEntities || [];
+        labelEntity.show = linkedEntities.some(entity => entity.show !== false);
+    });
 }
 
 // =========================
@@ -1384,26 +1392,26 @@ const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 handler.setInputAction((movement) => {
     const pickedObject = viewer.scene.pick(movement.position);
 
-    if (!Cesium.defined(pickedObject) || !Cesium.defined(pickedObject.id)) {
-        return;
+    if (
+        Cesium.defined(pickedObject) &&
+        Cesium.defined(pickedObject.id) &&
+        Cesium.defined(pickedObject.id.properties)
+    ) {
+        let entity = pickedObject.id;
+
+        if (!entity.polygon && getProp(entity, "isLotLabel")) {
+            const linkedEntityId = getProp(entity, "linkedEntityId");
+            const linkedEntity = viewer.entities.getById(linkedEntityId);
+            if (linkedEntity) {
+                entity = linkedEntity;
+            }
+        }
+
+        if (entity.polygon) {
+            blinkPolygon(entity);
+            renderSingleLotInfo(entity);
+        }
     }
-
-    let entity = pickedObject.id;
-
-    if (entity.isLotLabel && Array.isArray(entity.linkedLotIds)) {
-        const linkedLots = getLotsByIds(entity.linkedLotIds);
-        entity = linkedLots.find(item => item.show !== false) || linkedLots[0];
-    }
-
-    if (!Cesium.defined(entity) || !Cesium.defined(entity.properties)) {
-        return;
-    }
-
-    if (entity.polygon) {
-        blinkPolygon(entity);
-    }
-
-    renderSingleLotInfo(entity);
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
 // =========================
