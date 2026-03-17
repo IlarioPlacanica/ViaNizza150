@@ -959,10 +959,11 @@ function applyLotLabelResponsiveStyles() {
     lotLabelEntities.forEach((labelEntity) => {
         if (!labelEntity?.label) return;
         labelEntity.label.font = appearance.font;
-        labelEntity.label.fillColor = Cesium.Color.BLACK;
-        labelEntity.label.style = Cesium.LabelStyle.FILL;
+        labelEntity.label.fillColor = Cesium.Color.fromCssColorString("#F6F3EE");
+        labelEntity.label.outlineColor = Cesium.Color.fromCssColorString("rgba(0, 0, 0, 0.45)");
+        labelEntity.label.outlineWidth = 1;
+        labelEntity.label.style = Cesium.LabelStyle.FILL_AND_OUTLINE;
         labelEntity.label.showBackground = false;
-        labelEntity.label.outlineWidth = appearance.outlineWidth;
         labelEntity.label.backgroundPadding = appearance.backgroundPadding;
         labelEntity.label.scaleByDistance = appearance.scaleByDistance;
     });
