@@ -243,6 +243,7 @@ canvas.addEventListener("wheel", (event) => {
 // DEBUG PUNTI / PREVIEW
 // =========================
 
+/*
 const lottoPoints = [];
 let lottoPointEntities = [];
 let lottoPolygonEntity = null;
@@ -286,6 +287,7 @@ function createLivePreview() {
         });
     }
 }
+*/
 
 // =========================
 // UI / INFO PANEL
@@ -1013,11 +1015,11 @@ function buildLotLabelEntity(name, entities) {
             text: name,
             font: appearance.font,
             fillColor: Cesium.Color.WHITE,
-            outlineColor: Cesium.Color.fromCssColorString("#0b0d10"),
-            outlineWidth: appearance.outlineWidth,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            showBackground: true,
-            backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.56)"),
+       /*   outlineColor: Cesium.Color.fromCssColorString("#0b0d10"),
+            outlineWidth: appearance.outlineWidth,  */
+            style: Cesium.LabelStyle.FILL,
+            showBackground: false,
+        /*  backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.56)"), */
             backgroundPadding: appearance.backgroundPadding,
             horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
             verticalOrigin: Cesium.VerticalOrigin.CENTER,
