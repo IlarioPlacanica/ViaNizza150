@@ -713,6 +713,7 @@ function showOnlyLotsByIds(ids) {
     });
 
     refreshLotLabelsVisibility();
+    applyLotLabelResponsiveStyles();
 }
 
 function renderLotsGroupInfo(ids, title, eyebrow = "Categoria") {
@@ -924,6 +925,44 @@ function getEntityHierarchy(entity) {
         : hierarchyProperty;
 }
 
+function isTabletLandscapeViewport() {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+        return false;
+    }
+
+    return window.matchMedia("(orientation: landscape) and (min-width: 1024px) and (max-width: 1400px) and (max-height: 950px)").matches;
+}
+
+function getLotLabelAppearance() {
+    if (isTabletLandscapeViewport()) {
+        return {
+            font: "700 18px Inter, system-ui, sans-serif",
+            outlineWidth: 3,
+            backgroundPadding: new Cesium.Cartesian2(5, 2),
+            scaleByDistance: new Cesium.NearFarScalar(180.0, 1.02, 2200.0, 0.84)
+        };
+    }
+
+    return {
+        font: "700 21px Inter, system-ui, sans-serif",
+        outlineWidth: 4,
+        backgroundPadding: new Cesium.Cartesian2(8, 5),
+        scaleByDistance: new Cesium.NearFarScalar(180.0, 1.15, 2200.0, 0.92)
+    };
+}
+
+function applyLotLabelResponsiveStyles() {
+    const appearance = getLotLabelAppearance();
+
+    lotLabelEntities.forEach((labelEntity) => {
+        if (!labelEntity?.label) return;
+        labelEntity.label.font = appearance.font;
+        labelEntity.label.outlineWidth = appearance.outlineWidth;
+        labelEntity.label.backgroundPadding = appearance.backgroundPadding;
+        labelEntity.label.scaleByDistance = appearance.scaleByDistance;
+    });
+}
+
 function getCenterFromEntities(entities) {
     const positions = entities.flatMap(entity => getEntityHierarchy(entity)?.positions || []);
 
@@ -960,6 +999,7 @@ function buildLotLabelEntity(name, entities) {
     if (!labelPosition) return null;
 
     const primaryEntity = entities[0];
+    const appearance = getLotLabelAppearance();
 
     const labelEntity = viewer.entities.add({
         id: `label_${primaryEntity.id}`,
@@ -971,20 +1011,20 @@ function buildLotLabelEntity(name, entities) {
         },
         label: {
             text: name,
-            font: "700 21px Inter, system-ui, sans-serif",
+            font: appearance.font,
             fillColor: Cesium.Color.WHITE,
             outlineColor: Cesium.Color.fromCssColorString("#0b0d10"),
-            outlineWidth: 4,
+            outlineWidth: appearance.outlineWidth,
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             showBackground: true,
-            backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.64)"),
-            backgroundPadding: new Cesium.Cartesian2(8, 5),
+            backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.56)"),
+            backgroundPadding: appearance.backgroundPadding,
             horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
             verticalOrigin: Cesium.VerticalOrigin.CENTER,
             heightReference: Cesium.HeightReference.NONE,
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
             distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 2200.0),
-            scaleByDistance: new Cesium.NearFarScalar(180.0, 1.15, 2200.0, 0.92)
+            scaleByDistance: appearance.scaleByDistance
         }
     });
 
@@ -1382,6 +1422,7 @@ viewer.entities.add({
 });
 
 addLabelsToAllLotti();
+window.addEventListener("resize", applyLotLabelResponsiveStyles);
 
 // =========================
 // CLICK LOTTI
