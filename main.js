@@ -938,7 +938,7 @@ function isTabletLandscapeViewport() {
 function getLotLabelAppearance() {
     if (isTabletLandscapeViewport()) {
         return {
-            font: "700 18px Inter, system-ui, sans-serif",
+            font: "800 17px Inter, system-ui, sans-serif",
             outlineWidth: 3,
             backgroundPadding: new Cesium.Cartesian2(5, 2),
             scaleByDistance: new Cesium.NearFarScalar(180.0, 1.02, 2200.0, 0.84)
@@ -959,6 +959,9 @@ function applyLotLabelResponsiveStyles() {
     lotLabelEntities.forEach((labelEntity) => {
         if (!labelEntity?.label) return;
         labelEntity.label.font = appearance.font;
+        labelEntity.label.fillColor = Cesium.Color.BLACK;
+        labelEntity.label.style = Cesium.LabelStyle.FILL;
+        labelEntity.label.showBackground = false;
         labelEntity.label.outlineWidth = appearance.outlineWidth;
         labelEntity.label.backgroundPadding = appearance.backgroundPadding;
         labelEntity.label.scaleByDistance = appearance.scaleByDistance;
@@ -1039,6 +1042,11 @@ function addLabelsToAllLotti() {
 
     getAllLotti().forEach((entity) => {
         if (!entity?.name) return;
+
+        if (entity.name === "Lotto Aree Comuni" && entity.id !== "lotto Aree_Comuni.1") {
+            return;
+        }
+
         if (!groups.has(entity.name)) {
             groups.set(entity.name, []);
         }

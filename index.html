@@ -10,7 +10,7 @@
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.133/Build/Cesium/Widgets/widgets.css"
           rel="stylesheet" />
 
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=20260317-webfix" />
 </head>
 <body>
     <div id="cesiumContainer"></div>
@@ -56,9 +56,10 @@
         <button class="filter-inverted active" onclick="setActiveFilter(this); hideAllLotti(); closeInfoPanel()">NASCONDI TUTTI</button>
         <button onclick="setFilterAndShowCategory(this, 'rosso')">LOCATA</button>
         <button onclick="setFilterAndShowCategory(this, 'azzurro')">SFITTA LOCABILE</button>
+        <button onclick="setActiveFilter(this); showOnlyCategory('verde'); renderNonLocabileTotalInfo()">SFITTA NON LOCABILE</button>
         <button onclick="setActiveFilter(this); showTransformabileLots(); renderTransformabileInfo()">SFITTA C.T. TRASFORMABILE</button>
         <button onclick="setActiveFilter(this); renderPostiAutoInfo()">POSTI AUTO</button>
-        <button onclick="setActiveFilter(this); showOnlyCategory('verde'); renderNonLocabileTotalInfo()">SFITTA NON LOCABILE</button>
+        
     </div>
 
     <div id="infoPanel" class="info-panel hidden">
@@ -72,6 +73,6 @@
         <div id="infoPanelBody"></div>
     </div>
 
-    <script type="module" src="main.js"></script>
+    <script type="module" src="main.js?v=20260317-webfix"></script>
 </body>
 </html>

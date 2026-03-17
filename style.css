@@ -974,3 +974,34 @@ body {
             font-size: 10px;
         }
 }
+
+
+/* ===== WEB-ONLY INFO PANEL FIX ===== */
+@media (hover: hover) and (pointer: fine) {
+    :root {
+        --web-panel-gap: 18px;
+        --web-header-top: 20px;
+        --web-header-shell-height: 72px;
+        --web-filter-bottom: 24px;
+        --web-filter-shell-height: 83px;
+    }
+
+    .info-panel {
+        top: calc(var(--web-header-top) + var(--web-header-shell-height) + var(--web-panel-gap));
+        right: 20px;
+        bottom: auto;
+        width: clamp(330px, 28vw, 382px);
+        height: auto;
+        max-height: calc(100vh - (var(--web-header-top) + var(--web-header-shell-height) + var(--web-panel-gap)) - (var(--web-filter-bottom) + var(--web-filter-shell-height) + var(--web-panel-gap)));
+    }
+}
+
+@media (hover: hover) and (pointer: fine) and (max-width: 1180px) {
+    :root {
+        --web-filter-shell-height: 72px;
+    }
+
+    .info-panel {
+        width: clamp(320px, 30vw, 360px);
+    }
+}
