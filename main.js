@@ -703,14 +703,120 @@ function renderPostiAutoInfo() {
     openInfoPanel();
 }
 
+function getLotsByIds(ids) {
+    return viewer.entities.values.filter(entity => ids.includes(entity.id));
+}
+
+function showOnlyLotsByIds(ids) {
+    getAllLotti().forEach(entity => {
+        entity.show = ids.includes(entity.id);
+    });
+}
+
+function renderLotsGroupInfo(ids, title, eyebrow = "Categoria") {
+    const items = getLotsByIds(ids);
+
+    infoEyebrow.textContent = eyebrow;
+    lotTitle.textContent = title;
+
+    if (!items.length) {
+        infoPanelBody.innerHTML = `
+            <p class="info-empty">Nessun lotto disponibile.</p>
+        `;
+        openInfoPanel();
+        return;
+    }
+
+    const totalMq = items.reduce((sum, entity) => {
+        return sum + toNumberOrZero(getProp(entity, "mq"));
+    }, 0);
+
+    const cards = items.map(entity => {
+        const stato = formatValue(getProp(entity, "stato"));
+        const mq = formatDisplayedMq(entity);
+        const reddito = formatValue(getProp(entity, "reddito"));
+        const scadenzaContratto = formatValue(getProp(entity, "scadenzaContratto"));
+        const destinazioneUso = formatValue(getProp(entity, "destinazioneUso"));
+        const categoriaConduttore = formatValue(getProp(entity, "categoriaConduttore"));
+
+        const hideExtraInfo = isSfittoNoExtraInfo(stato);
+        const showCategoriaConduttore = isLocata(stato);
+
+        return `
+            <div class="lot-card">
+                <div class="lot-card-title">${entity.name || "Lotto"}</div>
+                <div class="lot-card-grid">
+                    <div class="info-row">
+                        <span>Stato</span>
+                        <strong>${stato}</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>MQ</span>
+                        <strong>${mq}</strong>
+                    </div>
+
+                    ${stato === "SFITTA LOCABILE" ? `
+                        <div class="info-row">
+                            <span>MQ sfitta non locabile</span>
+                            <strong>${formatMqValue(getProp(entity, "sfittaNonLocabile"))}</strong>
+                        </div>
+                    ` : ""}
+
+                    ${!hideExtraInfo ? `
+                        <div class="info-row">
+                            <span>Reddito annuo</span>
+                            <strong>${reddito}</strong>
+                        </div>
+                        <div class="info-row">
+                            <span>Scadenza contratto</span>
+                            <strong>${scadenzaContratto}</strong>
+                        </div>
+                        <div class="info-row">
+                            <span>Destinazione d’uso</span>
+                            <strong>${destinazioneUso}</strong>
+                        </div>
+                    ` : ""}
+
+                    ${showCategoriaConduttore ? `
+                        <div class="info-row">
+                            <span>Categoria conduttore</span>
+                            <strong>${categoriaConduttore}</strong>
+                        </div>
+                    ` : ""}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    infoPanelBody.innerHTML = `
+        <div class="category-summary">
+            <div class="summary-card">
+                <span>Numero lotti</span>
+                <strong>${items.length}</strong>
+            </div>
+            <div class="summary-card">
+                <span>MQ totali</span>
+                <strong>${formatMqTotal(totalMq)}</strong>
+            </div>
+        </div>
+
+        <div class="lot-card-list">
+            ${cards}
+        </div>
+    `;
+
+    openInfoPanel();
+}
+
 function showTransformabileLots() {
-    showOnlyCategory("azzurro");
+    showOnlyLotsByIds(["lotto_2", "lotto_3"]);
 }
 
 function renderTransformabileInfo() {
-    renderCategoryInfo("azzurro");
-    infoEyebrow.textContent = "Categoria";
-    lotTitle.textContent = "Sfitta C.T. trasformabile";
+    renderLotsGroupInfo(
+        ["lotto_2", "lotto_3"],
+        "Sfitta C.T. trasformabile"
+    );
 }
 
 function showAllLotti() {
@@ -799,6 +905,8 @@ function blinkPolygon(entity) {
 // LABEL LOTTI
 // =========================
 
+const lotLabelEntities = [];
+
 function getEntityHierarchy(entity) {
     const hierarchyProperty = entity?.polygon?.hierarchy;
     if (!hierarchyProperty) return null;
@@ -833,38 +941,75 @@ function getEntityCenterFromPolygon(entity) {
         ? extrudedHeightProperty.getValue(Cesium.JulianDate.now())
         : extrudedHeightProperty;
 
-    const labelHeight = Math.max(maxHeight, extrudedHeight || 0) + 8;
+    const labelHeight = Math.max(maxHeight, extrudedHeight || 0) + 10;
 
     return Cesium.Cartesian3.fromRadians(averageLon, averageLat, labelHeight);
 }
 
-function addLotLabel(entity) {
-    if (!entity?.polygon || !entity?.name || entity.label) return;
+function sanitizeLabelId(name) {
+    return String(name)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
+}
 
-    const labelPosition = getEntityCenterFromPolygon(entity);
+function getRepresentativeLabelEntity(entities) {
+    return entities.find(entity => !String(entity.id).includes(".")) || entities[0];
+}
+
+function addLotLabelGroup(name, entities) {
+    const representative = getRepresentativeLabelEntity(entities);
+    const labelPosition = getEntityCenterFromPolygon(representative);
+
     if (!labelPosition) return;
 
-    entity.position = labelPosition;
-    entity.label = {
-        text: entity.name,
-        font: "600 15px Inter, system-ui, sans-serif",
-        fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.fromCssColorString("#111111"),
-        outlineWidth: 3,
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        showBackground: true,
-        backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.55)"),
-        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-        verticalOrigin: Cesium.VerticalOrigin.CENTER,
-        heightReference: Cesium.HeightReference.NONE,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 1600.0),
-        scaleByDistance: new Cesium.NearFarScalar(180.0, 1.0, 1400.0, 0.55)
-    };
+    const labelEntity = viewer.entities.add({
+        id: `lotto_label_${sanitizeLabelId(name)}`,
+        position: labelPosition,
+        label: {
+            text: name,
+            font: "700 21px Inter, system-ui, sans-serif",
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.fromCssColorString("#050608"),
+            outlineWidth: 4,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            showBackground: true,
+            backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.64)"),
+            backgroundPadding: new Cesium.Cartesian2(14, 8),
+            horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+            verticalOrigin: Cesium.VerticalOrigin.CENTER,
+            pixelOffset: new Cesium.Cartesian2(0, -8),
+            heightReference: Cesium.HeightReference.NONE,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 2200.0),
+            scaleByDistance: new Cesium.NearFarScalar(160.0, 1.35, 1800.0, 0.95)
+        }
+    });
+
+    labelEntity.label.show = new Cesium.CallbackProperty(
+        () => entities.some(entity => entity.show !== false),
+        false
+    );
+    labelEntity.linkedLotIds = entities.map(entity => entity.id);
+    labelEntity.isLotLabel = true;
+    lotLabelEntities.push(labelEntity);
 }
 
 function addLabelsToAllLotti() {
-    getAllLotti().forEach(addLotLabel);
+    const groups = new Map();
+
+    getAllLotti().forEach(entity => {
+        const name = entity.name?.trim();
+        if (!name) return;
+
+        if (!groups.has(name)) {
+            groups.set(name, []);
+        }
+
+        groups.get(name).push(entity);
+    });
+
+    groups.forEach((entities, name) => addLotLabelGroup(name, entities));
 }
 
 // =========================
@@ -1239,19 +1384,26 @@ const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 handler.setInputAction((movement) => {
     const pickedObject = viewer.scene.pick(movement.position);
 
-    if (
-        Cesium.defined(pickedObject) &&
-        Cesium.defined(pickedObject.id) &&
-        Cesium.defined(pickedObject.id.properties)
-    ) {
-        const entity = pickedObject.id;
-
-        if (entity.polygon) {
-            blinkPolygon(entity);
-        }
-
-        renderSingleLotInfo(entity);
+    if (!Cesium.defined(pickedObject) || !Cesium.defined(pickedObject.id)) {
+        return;
     }
+
+    let entity = pickedObject.id;
+
+    if (entity.isLotLabel && Array.isArray(entity.linkedLotIds)) {
+        const linkedLots = getLotsByIds(entity.linkedLotIds);
+        entity = linkedLots.find(item => item.show !== false) || linkedLots[0];
+    }
+
+    if (!Cesium.defined(entity) || !Cesium.defined(entity.properties)) {
+        return;
+    }
+
+    if (entity.polygon) {
+        blinkPolygon(entity);
+    }
+
+    renderSingleLotInfo(entity);
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
 // =========================
