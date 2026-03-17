@@ -373,7 +373,11 @@ function getLottiByCategory(categoryName) {
 }
 
 function isSfittoNoExtraInfo(stato) {
-    return stato === "SFITTA LOCABILE" || stato === "SFITTA NON LOCABILE";
+    return (
+        stato === "SFITTA LOCABILE" ||
+        stato === "SFITTA NON LOCABILE" ||
+        stato === "AREA COMUNE"
+    );
 }
 
 function isLocata(stato) {
@@ -381,12 +385,21 @@ function isLocata(stato) {
 }
 
 function getSfittaNonLocabileBreakdownItems() {
-    return getLottiByCategory("azzurro")
+    const azzurri = getLottiByCategory("azzurro")
         .map(entity => {
             const value = toNumberOrZero(getProp(entity, "sfittaNonLocabile"));
             return { entity, value };
         })
         .filter(item => item.value > 0);
+
+    const verdi = getLottiByCategory("verde")
+        .map(entity => {
+            const value = toNumberOrZero(getProp(entity, "mq"));
+            return { entity, value };
+        })
+        .filter(item => item.value > 0);
+
+    return [...azzurri, ...verdi];
 }
 
 function getSfittaNonLocabileBreakdownLabel(entity) {
@@ -396,6 +409,7 @@ function getSfittaNonLocabileBreakdownLabel(entity) {
     if (id === "lotto_5.1") return "Posti auto";
     if (id === "lotto_1.1") return "Lotto 1";
     if (id === "lotto_4.1") return "Lotto 4";
+    if (id === "lotto Aree_Comuni") return "Lotto Aree Comuni";
 
     return entity.name || "Lotto";
 }
