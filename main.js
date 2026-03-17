@@ -938,7 +938,7 @@ function isTabletLandscapeViewport() {
 function getLotLabelAppearance() {
     if (isTabletLandscapeViewport()) {
       return {
-        font: "800 25px Inter, system-ui, sans-serif",
+        font: "800 23px Inter, system-ui, sans-serif",
         outlineWidth: 1,
         backgroundPadding: new Cesium.Cartesian2(0, 0),
         scaleByDistance: new Cesium.NearFarScalar(180.0, 1.15, 2200.0, 0.92)
@@ -1253,7 +1253,7 @@ viewer.entities.add({
 
 viewer.entities.add({
     id: "lotto_Torre_Servizi",
-    name: "Lotto Torre Servizi",
+    name: "Torre Servizi",
     polygon: {
         hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights([
             7.6667666337555405, 45.039872252356474, 301,
@@ -1281,7 +1281,7 @@ viewer.entities.add({
 
 viewer.entities.add({
     id: "lotto_Torre_Servizi.1",
-    name: "Lotto Torre Servizi",
+    name: "Torre Servizi",
     polygon: {
         hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights([
             7.6667666337555405, 45.039872252356474, 315,
@@ -1369,7 +1369,7 @@ viewer.entities.add({
 
 viewer.entities.add({
     id: "lotto Aree_Comuni",
-    name: "Lotto Aree Comuni",
+    name: "Aree Comuni",
     polygon: {
         hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights([
             7.6688211483942945, 45.03976315514184, 290,
@@ -1404,7 +1404,7 @@ viewer.entities.add({
 
 viewer.entities.add({
     id: "lotto Aree_Comuni.1",
-    name: "Lotto Aree Comuni",
+    name: "Aree Comuni",
     polygon: {
         hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights([
             7.668656437813153, 45.04055075868196, 290,
