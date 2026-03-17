@@ -21,6 +21,11 @@
                 <div class="ui-eyebrow">Interactive Building Overview</div>
                 <h1 class="top-header-title">VIA NIZZA 150, TORINO</h1>
             </div>
+
+            <div class="top-header-center" aria-hidden="true">
+                <img class="top-header-icon" src="favicon.png" alt="" />
+            </div>
+
             <div class="top-header-meta">
                 Lot status, lot availability and spatial overview
             </div>
@@ -47,10 +52,11 @@
     </div>
 
     <div id="filterBar" class="filter-bar">
-        <button onclick="setActiveFilter(this); showAllLotti(); renderTotalSurfaceInfo()">MOSTRA TUTTI</button>
-        <button class="active" onclick="setActiveFilter(this); hideAllLotti(); closeInfoPanel()">NASCONDI TUTTI</button>
+        <button class="filter-inverted" onclick="setActiveFilter(this); showAllLotti(); renderTotalSurfaceInfo()">MOSTRA TUTTI</button>
+        <button class="filter-inverted active" onclick="setActiveFilter(this); hideAllLotti(); closeInfoPanel()">NASCONDI TUTTI</button>
         <button onclick="setFilterAndShowCategory(this, 'rosso')">LOCATA</button>
         <button onclick="setFilterAndShowCategory(this, 'azzurro')">SFITTA LOCABILE</button>
+        <button onclick="setActiveFilter(this); showTransformabileLots(); renderTransformabileInfo()">SFITTA C.T. TRASFORMABILE</button>
         <button onclick="setActiveFilter(this); renderPostiAutoInfo()">POSTI AUTO</button>
         <button onclick="setActiveFilter(this); showOnlyCategory('verde'); renderNonLocabileTotalInfo()">SFITTA NON LOCABILE</button>
     </div>

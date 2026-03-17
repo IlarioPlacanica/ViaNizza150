@@ -96,7 +96,6 @@ let isPointerDown = false;
 let startX = 0;
 let startY = 0;
 
-// ===== AGGIUNTO: pinch zoom =====
 const activePointers = new Map();
 let isPinching = false;
 let lastPinchDistance = 0;
@@ -108,12 +107,30 @@ function getPointerDistance() {
     const dy = points[0].y - points[1].y;
     return Math.hypot(dx, dy);
 }
-// ===== FINE AGGIUNTA =====
+
+function beginOrbitDrag(x, y) {
+    isPointerDown = true;
+    startX = x;
+    startY = y;
+}
+
+function syncSinglePointerAfterGesture() {
+    if (activePointers.size === 1 && !isPinching) {
+        const remainingPointer = Array.from(activePointers.values())[0];
+        beginOrbitDrag(remainingPointer.x, remainingPointer.y);
+        return;
+    }
+
+    isPointerDown = false;
+}
 
 const canvas = viewer.scene.canvas;
 canvas.style.touchAction = "none";
 
 canvas.addEventListener("pointerdown", (event) => {
+    const isPrimaryMouseButton = event.pointerType !== "touch" ? event.button === 0 : true;
+    if (!isPrimaryMouseButton) return;
+
     activePointers.set(event.pointerId, {
         x: event.clientX,
         y: event.clientY
@@ -123,14 +140,8 @@ canvas.addEventListener("pointerdown", (event) => {
         isPinching = true;
         isPointerDown = false;
         lastPinchDistance = getPointerDistance();
-    }
-
-    if (event.pointerType !== "touch") {
-        if (event.button !== 0) return;
-
-        isPointerDown = true;
-        startX = event.clientX;
-        startY = event.clientY;
+    } else if (activePointers.size === 1) {
+        beginOrbitDrag(event.clientX, event.clientY);
     }
 
     canvas.setPointerCapture(event.pointerId);
@@ -145,7 +156,6 @@ canvas.addEventListener("pointermove", (event) => {
         });
     }
 
-    // ===== AGGIUNTO: pinch zoom =====
     if (isPinching && activePointers.size >= 2) {
         const currentDistance = getPointerDistance();
         const pinchDelta = currentDistance - lastPinchDistance;
@@ -161,9 +171,8 @@ canvas.addEventListener("pointermove", (event) => {
         event.preventDefault();
         return;
     }
-    // ===== FINE AGGIUNTA =====
 
-    if (!isPointerDown) return;
+    if (!isPointerDown || activePointers.size !== 1) return;
 
     const deltaX = event.clientX - startX;
     const deltaY = event.clientY - startY;
@@ -184,33 +193,35 @@ canvas.addEventListener("pointermove", (event) => {
 canvas.addEventListener("pointerup", (event) => {
     activePointers.delete(event.pointerId);
 
-    // ===== AGGIUNTO: gestione fine pinch =====
     if (activePointers.size < 2) {
         isPinching = false;
         lastPinchDistance = 0;
     }
-    // ===== FINE AGGIUNTA =====
 
-    isPointerDown = false;
+    syncSinglePointerAfterGesture();
     event.preventDefault();
 });
 
 canvas.addEventListener("pointercancel", (event) => {
     activePointers.delete(event.pointerId);
+
     if (activePointers.size < 2) {
         isPinching = false;
         lastPinchDistance = 0;
     }
-    isPointerDown = false;
+
+    syncSinglePointerAfterGesture();
 });
 
 canvas.addEventListener("lostpointercapture", (event) => {
     activePointers.delete(event.pointerId);
+
     if (activePointers.size < 2) {
         isPinching = false;
         lastPinchDistance = 0;
     }
-    isPointerDown = false;
+
+    syncSinglePointerAfterGesture();
 });
 
 canvas.addEventListener("wheel", (event) => {
@@ -692,6 +703,16 @@ function renderPostiAutoInfo() {
     openInfoPanel();
 }
 
+function showTransformabileLots() {
+    showOnlyCategory("azzurro");
+}
+
+function renderTransformabileInfo() {
+    renderCategoryInfo("azzurro");
+    infoEyebrow.textContent = "Categoria";
+    lotTitle.textContent = "Sfitta C.T. trasformabile";
+}
+
 function showAllLotti() {
     getAllLotti().forEach(entity => {
         entity.show = true;
@@ -731,6 +752,8 @@ window.closeInfoPanel = closeInfoPanel;
 window.renderTotalSurfaceInfo = renderTotalSurfaceInfo;
 window.renderNonLocabileTotalInfo = renderNonLocabileTotalInfo;
 window.renderPostiAutoInfo = renderPostiAutoInfo;
+window.showTransformabileLots = showTransformabileLots;
+window.renderTransformabileInfo = renderTransformabileInfo;
 
 // =========================
 // BLINK POLIGONO
@@ -770,6 +793,78 @@ function blinkPolygon(entity) {
         polygon.material = originalMaterial;
         entity._isBlinking = false;
     }, 420);
+}
+
+// =========================
+// LABEL LOTTI
+// =========================
+
+function getEntityHierarchy(entity) {
+    const hierarchyProperty = entity?.polygon?.hierarchy;
+    if (!hierarchyProperty) return null;
+
+    return hierarchyProperty.getValue
+        ? hierarchyProperty.getValue(Cesium.JulianDate.now())
+        : hierarchyProperty;
+}
+
+function getEntityCenterFromPolygon(entity) {
+    const hierarchy = getEntityHierarchy(entity);
+    const positions = hierarchy?.positions;
+
+    if (!positions?.length) return null;
+
+    let lonSum = 0;
+    let latSum = 0;
+    let maxHeight = 0;
+
+    positions.forEach((position) => {
+        const cartographic = Cesium.Cartographic.fromCartesian(position);
+        lonSum += cartographic.longitude;
+        latSum += cartographic.latitude;
+        maxHeight = Math.max(maxHeight, cartographic.height || 0);
+    });
+
+    const averageLon = lonSum / positions.length;
+    const averageLat = latSum / positions.length;
+
+    const extrudedHeightProperty = entity.polygon?.extrudedHeight;
+    const extrudedHeight = extrudedHeightProperty?.getValue
+        ? extrudedHeightProperty.getValue(Cesium.JulianDate.now())
+        : extrudedHeightProperty;
+
+    const labelHeight = Math.max(maxHeight, extrudedHeight || 0) + 8;
+
+    return Cesium.Cartesian3.fromRadians(averageLon, averageLat, labelHeight);
+}
+
+function addLotLabel(entity) {
+    if (!entity?.polygon || !entity?.name || entity.label) return;
+
+    const labelPosition = getEntityCenterFromPolygon(entity);
+    if (!labelPosition) return;
+
+    entity.position = labelPosition;
+    entity.label = {
+        text: entity.name,
+        font: "600 15px Inter, system-ui, sans-serif",
+        fillColor: Cesium.Color.WHITE,
+        outlineColor: Cesium.Color.fromCssColorString("#111111"),
+        outlineWidth: 3,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        showBackground: true,
+        backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.55)"),
+        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+        verticalOrigin: Cesium.VerticalOrigin.CENTER,
+        heightReference: Cesium.HeightReference.NONE,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 1600.0),
+        scaleByDistance: new Cesium.NearFarScalar(180.0, 1.0, 1400.0, 0.55)
+    };
+}
+
+function addLabelsToAllLotti() {
+    getAllLotti().forEach(addLotLabel);
 }
 
 // =========================
@@ -1132,6 +1227,8 @@ viewer.entities.add({
         categoria: "verde"
     }
 });
+
+addLabelsToAllLotti();
 
 // =========================
 // CLICK LOTTI
