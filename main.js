@@ -422,7 +422,7 @@ function getSfittaNonLocabileBreakdownLabel(entity) {
     if (id === "lotto_5.1") return "Posti auto";
     if (id === "lotto_1.1") return "Lotto 1";
     if (id === "lotto_4.1") return "Lotto 4";
-    if (id === "lotto Aree_Comuni") return "Lotto Aree Comuni";
+    if (id === "lotto Aree_Comuni") return "Aree Comuni";
 
     return entity.name || "Lotto";
 }
@@ -1017,8 +1017,10 @@ function buildLotLabelEntity(name, entities) {
         label: {
             text: name,
             font: appearance.font,
-	    fillColor: Cesium.Color.BLACK,
-            style: Cesium.LabelStyle.FILL,
+	    fillColor: Cesium.Color.fromCssColorString("#F6F3EE"),
+            outlineColor: Cesium.Color.fromCssColorString("rgba(0, 0, 0, 0.45)"),
+            outlineWidth: 1,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             showBackground: false,
         /*  backgroundColor: Cesium.Color.fromCssColorString("rgba(11, 13, 16, 0.56)"), */
             backgroundPadding: appearance.backgroundPadding,
@@ -1041,7 +1043,7 @@ function addLabelsToAllLotti() {
     getAllLotti().forEach((entity) => {
         if (!entity?.name) return;
 
-        if (entity.name === "Lotto Aree Comuni" && entity.id !== "lotto Aree_Comuni.1") {
+        if (entity.name === "Aree Comuni" && entity.id !== "lotto Aree_Comuni.1") {
             return;
         }
 
