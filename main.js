@@ -454,7 +454,7 @@ let savedStandardOrbitState = null;
 let layoutSyncFrame = 0;
 let layoutSyncTimeout = 0;
 let orbitAnimationFrame = 0;
-let diagramCameraOffsetProgress = 0;
+var diagramCameraOffsetProgress = 0;
 const diagramTargetScreenX = 1 / 4;
 
 function isDiagramMode() {
