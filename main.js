@@ -173,6 +173,21 @@ function cloneCartesian3(position) {
     return new Cesium.Cartesian3(position.x, position.y, position.z);
 }
 
+function easeInOutCubic(t) {
+    return t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function lerpNumber(start, end, t) {
+    return start + (end - start) * t;
+}
+
+function lerpAngle(start, end, t) {
+    const shortestDelta = Cesium.Math.negativePiToPi(end - start);
+    return start + shortestDelta * t;
+}
+
 function getCurrentOrbitState() {
     return {
         target: cloneCartesian3(orbitTarget),
@@ -436,6 +451,7 @@ var currentLayoutMode = "default";
 let savedStandardOrbitState = null;
 let layoutSyncFrame = 0;
 let layoutSyncTimeout = 0;
+let orbitAnimationFrame = 0;
 const diagramTargetScreenX = 1 / 4;
 
 function isDiagramMode() {
@@ -461,6 +477,56 @@ function scheduleViewerLayoutSync() {
         viewer.resize();
         updateOrbitCamera();
     }, 380);
+}
+
+function stopOrbitAnimation() {
+    if (!orbitAnimationFrame) return;
+    cancelAnimationFrame(orbitAnimationFrame);
+    orbitAnimationFrame = 0;
+}
+
+function animateOrbitToState(state, duration = 1150) {
+    if (!state?.target) return;
+
+    stopOrbitAnimation();
+
+    const startState = getCurrentOrbitState();
+    const targetState = {
+        target: cloneCartesian3(state.target),
+        heading: state.heading,
+        pitch: state.pitch,
+        range: state.range
+    };
+
+    const startTime = performance.now();
+
+    const step = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = easeInOutCubic(progress);
+
+        orbitTarget = Cesium.Cartesian3.lerp(
+            startState.target,
+            targetState.target,
+            eased,
+            new Cesium.Cartesian3()
+        );
+        orbitHeading = lerpAngle(startState.heading, targetState.heading, eased);
+        orbitPitch = lerpAngle(startState.pitch, targetState.pitch, eased);
+        orbitRange = lerpNumber(startState.range, targetState.range, eased);
+
+        updateOrbitCamera();
+
+        if (progress < 1) {
+            orbitAnimationFrame = requestAnimationFrame(step);
+            return;
+        }
+
+        orbitAnimationFrame = 0;
+        applyOrbitState(targetState);
+    };
+
+    orbitAnimationFrame = requestAnimationFrame(step);
 }
 
 function shouldUseDiagramCameraOffset() {
@@ -499,16 +565,14 @@ function getDiagramCameraRange() {
 }
 
 function focusDiagramCamera() {
-    const target = getDiagramCameraTarget();
-    if (target) {
-        orbitTarget = target;
-    }
+    const targetState = {
+        target: getDiagramCameraTarget(),
+        heading: diagramOrbitHeading,
+        pitch: diagramOrbitPitch,
+        range: getDiagramCameraRange()
+    };
 
-    orbitHeading = diagramOrbitHeading;
-    orbitPitch = diagramOrbitPitch;
-    orbitRange = getDiagramCameraRange();
-
-    updateOrbitCamera();
+    animateOrbitToState(targetState, 1250);
     scheduleViewerLayoutSync();
 }
 
@@ -519,7 +583,7 @@ function exitDiagramMode() {
     document.body.classList.remove("diagram-mode");
 
     if (savedStandardOrbitState) {
-        applyOrbitState(savedStandardOrbitState);
+        animateOrbitToState(savedStandardOrbitState, 1050);
         savedStandardOrbitState = null;
     }
 
