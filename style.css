@@ -447,7 +447,7 @@ body.diagram-mode .legend-panel {
 }
 
 body.diagram-mode .info-panel {
-    left: calc(33.333% + 10px);
+    left: calc(50% + 12px);
     right: 20px;
     width: auto;
     padding: 28px;
@@ -539,6 +539,16 @@ body.diagram-mode #closePanel {
     color: var(--text-main);
 }
 
+.diagram-section-transform {
+    --diagram-transform-label-width: 170px;
+    --diagram-transform-gap: 18px;
+}
+
+.diagram-section-transform .diagram-section-heading {
+    width: calc(100% - var(--diagram-transform-label-width) - var(--diagram-transform-gap));
+    margin-left: calc(var(--diagram-transform-label-width) + var(--diagram-transform-gap));
+}
+
 .diagram-section-scroll {
     overflow-x: auto;
     overflow-y: hidden;
@@ -577,7 +587,7 @@ body.diagram-mode #closePanel {
 }
 
 .diagram-matrix-transform {
-    grid-template-columns: minmax(170px, 0.82fr) repeat(3, minmax(190px, 1fr));
+    grid-template-columns: minmax(var(--diagram-transform-label-width, 170px), 0.82fr) repeat(3, minmax(190px, 1fr));
 }
 
 .diagram-matrix-surface {
@@ -706,6 +716,10 @@ body.diagram-mode #closePanel {
 
     .diagram-matrix-dual {
         grid-template-columns: minmax(180px, 0.82fr) minmax(220px, 1fr) minmax(220px, 1fr);
+    }
+
+    .diagram-section-transform {
+        --diagram-transform-label-width: 150px;
     }
 
     .diagram-matrix-transform {
@@ -877,7 +891,7 @@ body.diagram-mode #closePanel {
     }
 
     body.diagram-mode .info-panel {
-        left: calc(33.333% + (var(--tablet-landscape-gap) / 2));
+        left: calc(50% + (var(--tablet-landscape-gap) / 2));
         right: var(--tablet-landscape-gap);
         bottom: calc(var(--tablet-landscape-filter-bottom) + var(--tablet-landscape-filter-shell-height) + var(--tablet-landscape-gap));
         width: auto;
@@ -993,6 +1007,10 @@ body.diagram-mode #closePanel {
 
     .diagram-matrix-transform {
         min-width: 980px;
+    }
+
+    .diagram-section-transform {
+        --diagram-transform-label-width: 150px;
     }
 }
 

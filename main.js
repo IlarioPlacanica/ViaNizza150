@@ -162,6 +162,10 @@ function updateOrbitCamera() {
         orbitTarget,
         new Cesium.HeadingPitchRange(orbitHeading, orbitPitch, orbitRange)
     );
+
+    if (isDiagramMode() && shouldUseDiagramCameraOffset()) {
+        viewer.camera.moveRight(getDiagramCameraOffsetDistance());
+    }
 }
 
 function cloneCartesian3(position) {
@@ -432,7 +436,7 @@ let currentLayoutMode = "default";
 let savedStandardOrbitState = null;
 let layoutSyncFrame = 0;
 let layoutSyncTimeout = 0;
-const diagramTargetScreenX = 1 / 6;
+const diagramTargetScreenX = 1 / 4;
 
 function isDiagramMode() {
     return currentLayoutMode === "diagram";
@@ -476,25 +480,15 @@ function getHorizontalFovRadians() {
 
 function getDiagramCameraTarget() {
     const baseTarget = getCenterFromEntities(getLotsByIds(DIAGRAM_LOT_IDS));
-    if (!baseTarget) return cloneCartesian3(orbitTarget);
-    if (!shouldUseDiagramCameraOffset()) return cloneCartesian3(baseTarget);
+    return baseTarget ? cloneCartesian3(baseTarget) : cloneCartesian3(orbitTarget);
+}
 
+function getDiagramCameraOffsetDistance() {
     const desiredNdcX = ((diagramTargetScreenX - 0.5) / 0.5);
     const halfHorizontalFov = getHorizontalFovRadians() / 2;
     const targetAngle = Math.atan(Math.tan(halfHorizontalFov) * Math.abs(desiredNdcX));
-    const offsetDistance = getDiagramCameraRange() * Math.tan(targetAngle);
 
-    const rightOffsetLocal = new Cesium.Cartesian3(
-        Math.cos(diagramOrbitHeading) * offsetDistance,
-        -Math.sin(diagramOrbitHeading) * offsetDistance,
-        0
-    );
-
-    return Cesium.Matrix4.multiplyByPoint(
-        Cesium.Transforms.eastNorthUpToFixedFrame(baseTarget),
-        rightOffsetLocal,
-        new Cesium.Cartesian3()
-    );
+    return getDiagramCameraRange() * Math.tan(targetAngle);
 }
 
 function getDiagramCameraRange() {
@@ -1100,7 +1094,7 @@ function renderDiagramInfo() {
                 </div>
             </section>
 
-            <section class="diagram-section">
+            <section class="diagram-section diagram-section-transform">
                 <div class="diagram-section-heading">Asset da trasformare</div>
 
                 <div class="diagram-section-scroll">
