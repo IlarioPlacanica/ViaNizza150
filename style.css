@@ -32,7 +32,14 @@ body,
 }
 
 body {
+    position: relative;
     letter-spacing: 0.01em;
+}
+
+#cesiumContainer {
+    position: absolute;
+    inset: 0;
+    transition: left var(--transition), right var(--transition), width var(--transition);
 }
 
 /* Shared premium surface */
@@ -249,6 +256,7 @@ body {
     border-radius: var(--radius-xl);
     z-index: 20;
     box-sizing: border-box;
+    transition: left var(--transition), right var(--transition), width var(--transition), bottom var(--transition), padding var(--transition);
 }
 
     .info-panel.hidden {
@@ -417,6 +425,146 @@ body {
     pointer-events: none;
 }
 
+/* ===== DIAGRAM MODE ===== */
+
+body.diagram-mode #cesiumContainer {
+    right: calc(66.666% + 10px);
+}
+
+body.diagram-mode .legend-panel {
+    display: none;
+}
+
+body.diagram-mode .info-panel {
+    left: calc(33.333% + 10px);
+    right: 20px;
+    width: auto;
+    padding: 28px;
+}
+
+body.diagram-mode .info-panel-header {
+    margin-bottom: 22px;
+    padding-right: 0;
+}
+
+body.diagram-mode .info-panel h2 {
+    font-size: clamp(30px, 2.8vw, 38px);
+}
+
+body.diagram-mode #closePanel {
+    display: none;
+}
+
+.diagram-panel-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.diagram-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.9fr);
+    gap: 14px;
+    align-items: stretch;
+}
+
+.diagram-placeholder,
+.diagram-side {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+}
+
+.diagram-placeholder {
+    min-height: clamp(280px, 44vh, 520px);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background:
+        radial-gradient(circle at top right, rgba(217, 198, 163, 0.16), transparent 34%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+}
+
+.diagram-placeholder-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.diagram-placeholder-header strong {
+    font-size: 24px;
+    line-height: 1.1;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+.diagram-kicker {
+    font-size: 11px;
+    line-height: 1.2;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.diagram-placeholder-copy {
+    max-width: 48ch;
+    margin: 0;
+}
+
+.diagram-placeholder-lines {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.diagram-placeholder-line {
+    height: 12px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05));
+}
+
+.diagram-placeholder-line.short {
+    width: 42%;
+}
+
+.diagram-placeholder-line.medium {
+    width: 68%;
+}
+
+.diagram-placeholder-line.long {
+    width: 100%;
+}
+
+.diagram-side {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.diagram-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.diagram-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 500;
+}
+
 /* Utilities */
 .muted {
     color: var(--text-muted);
@@ -481,6 +629,10 @@ body {
         height: 48px;
         padding: 0 15px;
         font-size: 14px;
+    }
+
+    .diagram-hero {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -640,6 +792,19 @@ body {
         font-size: clamp(9.1px, 0.73vw, 10.4px);
         letter-spacing: -0.015em;
     }
+
+    body.diagram-mode #cesiumContainer {
+        right: calc(66.666% + (var(--tablet-landscape-gap) / 2));
+    }
+
+    body.diagram-mode .info-panel {
+        left: calc(33.333% + (var(--tablet-landscape-gap) / 2));
+        right: var(--tablet-landscape-gap);
+        bottom: calc(var(--tablet-landscape-filter-bottom) + var(--tablet-landscape-filter-shell-height) + var(--tablet-landscape-gap));
+        width: auto;
+        max-height: none;
+        padding: clamp(18px, 1.7vw, 22px);
+    }
 }
 
 @media (max-width: 920px) {
@@ -722,6 +887,20 @@ body {
             padding: 0 13px;
             font-size: 13px;
         }
+
+    body.diagram-mode #cesiumContainer {
+        right: 0;
+    }
+
+    body.diagram-mode .info-panel {
+        top: auto;
+        left: 14px;
+        right: 14px;
+        bottom: 68px;
+        width: auto;
+        max-height: 40vh;
+        padding: 16px;
+    }
 }
 
 @media (max-width: 680px) {
@@ -890,6 +1069,14 @@ body {
             font-weight: 600;
             border-radius: 999px;
         }
+
+    body.diagram-mode .info-panel {
+        left: 8px;
+        right: 8px;
+        bottom: 58px;
+        max-height: 38vh;
+        padding: 14px;
+    }
 }
 
 @media (max-width: 430px) {

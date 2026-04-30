@@ -51,24 +51,31 @@ const POSTI_AUTO_LOCATA_MQ = 4.827;
 const POSTI_AUTO_SFITTA_LOCABILE_MQ = 7.592;
 const POSTI_AUTO_TOTAL_MQ = POSTI_AUTO_LOCATA_MQ + POSTI_AUTO_SFITTA_LOCABILE_MQ;
 const SFITTA_NON_LOCABILE_TOTAL_MQ = 48.338;
+const DIAGRAM_LOT_IDS = ["lotto_2", "lotto_3"];
 
 // =========================
 // CAMERA ORBITALE
 // =========================
 
-const targetLon = 7.668758713914815;
-const targetLat = 45.04017277072142;
-const targetHeight = 313.8442567745517;
+const defaultTargetLon = 7.668758713914815;
+const defaultTargetLat = 45.04017277072142;
+const defaultTargetHeight = 313.8442567745517;
+const defaultOrbitHeading = Cesium.Math.toRadians(55);
+const defaultOrbitPitch = Cesium.Math.toRadians(-35);
+const defaultOrbitRange = 420;
+const diagramOrbitHeading = Cesium.Math.toRadians(55);
+const diagramOrbitPitch = Cesium.Math.toRadians(-32);
+const diagramOrbitFallbackRange = 560;
 
-const orbitTarget = Cesium.Cartesian3.fromDegrees(
-    targetLon,
-    targetLat,
-    targetHeight
+let orbitTarget = Cesium.Cartesian3.fromDegrees(
+    defaultTargetLon,
+    defaultTargetLat,
+    defaultTargetHeight
 );
 
-let orbitHeading = Cesium.Math.toRadians(55);
-let orbitPitch = Cesium.Math.toRadians(-35);
-let orbitRange = 420;
+let orbitHeading = defaultOrbitHeading;
+let orbitPitch = defaultOrbitPitch;
+let orbitRange = defaultOrbitRange;
 
 const minPitch = Cesium.Math.toRadians(-80);
 const maxPitch = Cesium.Math.toRadians(-10);
@@ -80,6 +87,31 @@ function updateOrbitCamera() {
         orbitTarget,
         new Cesium.HeadingPitchRange(orbitHeading, orbitPitch, orbitRange)
     );
+}
+
+function cloneCartesian3(position) {
+    if (!position) return null;
+    return new Cesium.Cartesian3(position.x, position.y, position.z);
+}
+
+function getCurrentOrbitState() {
+    return {
+        target: cloneCartesian3(orbitTarget),
+        heading: orbitHeading,
+        pitch: orbitPitch,
+        range: orbitRange
+    };
+}
+
+function applyOrbitState(state) {
+    if (!state?.target) return;
+
+    orbitTarget = cloneCartesian3(state.target);
+    orbitHeading = state.heading;
+    orbitPitch = state.pitch;
+    orbitRange = state.range;
+
+    updateOrbitCamera();
 }
 
 updateOrbitCamera();
@@ -317,6 +349,76 @@ const categoryMeta = {
     }
 };
 
+const categoryFilterExcludedIds = {
+    azzurro: new Set(["lotto_2", "lotto_3"])
+};
+
+let currentLayoutMode = "default";
+let savedStandardOrbitState = null;
+let layoutSyncFrame = 0;
+
+function isDiagramMode() {
+    return currentLayoutMode === "diagram";
+}
+
+function scheduleViewerLayoutSync() {
+    if (layoutSyncFrame) {
+        cancelAnimationFrame(layoutSyncFrame);
+    }
+
+    layoutSyncFrame = requestAnimationFrame(() => {
+        layoutSyncFrame = 0;
+        viewer.resize();
+        updateOrbitCamera();
+    });
+}
+
+function getDiagramCameraTarget() {
+    const target = getCenterFromEntities(getLotsByIds(DIAGRAM_LOT_IDS));
+    return target ? cloneCartesian3(target) : cloneCartesian3(orbitTarget);
+}
+
+function getDiagramCameraRange() {
+    const diagramSphere = getBoundingSphereFromEntities(getLotsByIds(DIAGRAM_LOT_IDS));
+    if (!diagramSphere) return diagramOrbitFallbackRange;
+
+    return Cesium.Math.clamp(diagramSphere.radius * 6.2, 500, 760);
+}
+
+function focusDiagramCamera() {
+    const target = getDiagramCameraTarget();
+    if (target) {
+        orbitTarget = target;
+    }
+
+    orbitHeading = diagramOrbitHeading;
+    orbitPitch = diagramOrbitPitch;
+    orbitRange = getDiagramCameraRange();
+
+    updateOrbitCamera();
+    scheduleViewerLayoutSync();
+}
+
+function exitDiagramMode() {
+    if (!isDiagramMode()) return;
+
+    currentLayoutMode = "default";
+    document.body.classList.remove("diagram-mode");
+
+    if (savedStandardOrbitState) {
+        applyOrbitState(savedStandardOrbitState);
+        savedStandardOrbitState = null;
+    }
+
+    scheduleViewerLayoutSync();
+}
+
+function ensureStandardLayout() {
+    if (isDiagramMode()) {
+        exitDiagramMode();
+    }
+}
+
 function getProp(entity, key) {
     if (!entity?.properties?.[key]) return "-";
     const value = entity.properties[key];
@@ -366,6 +468,7 @@ function formatDisplayedMq(entity) {
 }
 
 function closeInfoPanel() {
+    if (isDiagramMode()) return;
     infoPanel.classList.add("hidden");
 }
 
@@ -383,6 +486,14 @@ function getAllLotti() {
 
 function getLottiByCategory(categoryName) {
     return getAllLotti().filter(entity => getProp(entity, "categoria") === categoryName);
+}
+
+function getFilteredLottiByCategory(categoryName) {
+    const excludedIds = categoryFilterExcludedIds[categoryName];
+
+    return getLottiByCategory(categoryName).filter(entity => {
+        return !excludedIds || !excludedIds.has(entity.id);
+    });
 }
 
 function isSfittoNoExtraInfo(stato) {
@@ -489,7 +600,9 @@ function renderSingleLotInfo(entity) {
 }
 
 function renderCategoryInfo(categoryName) {
-    const items = getLottiByCategory(categoryName);
+    ensureStandardLayout();
+
+    const items = getFilteredLottiByCategory(categoryName);
     const meta = categoryMeta[categoryName];
 
     infoEyebrow.textContent = meta?.eyebrow || "Categoria";
@@ -625,6 +738,8 @@ function renderCategoryInfo(categoryName) {
 }
 
 function renderTotalSurfaceInfo() {
+    ensureStandardLayout();
+
     infoEyebrow.textContent = "Categoria";
     lotTitle.textContent = "Superficie totale";
 
@@ -641,6 +756,8 @@ function renderTotalSurfaceInfo() {
 }
 
 function renderNonLocabileTotalInfo() {
+    ensureStandardLayout();
+
     infoEyebrow.textContent = "Categoria";
     lotTitle.textContent = "Sfitta non locabile";
 
@@ -675,6 +792,8 @@ function renderNonLocabileTotalInfo() {
 }
 
 function renderPostiAutoInfo() {
+    ensureStandardLayout();
+
     infoEyebrow.textContent = "Categoria";
     lotTitle.textContent = "Posti auto";
 
@@ -703,6 +822,118 @@ function renderPostiAutoInfo() {
     `;
 
     openInfoPanel();
+}
+
+function renderDiagramInfo() {
+    const items = getLotsByIds(DIAGRAM_LOT_IDS);
+    const totalMq = items.reduce((sum, entity) => {
+        return sum + toNumberOrZero(getProp(entity, "mq"));
+    }, 0);
+
+    const focusNames = items.map(entity => entity.name || "Lotto").join(" + ");
+    const lotCards = items.map(entity => `
+        <div class="lot-card">
+            <div class="lot-card-title">${entity.name || "Lotto"}</div>
+            <div class="lot-card-grid">
+                <div class="info-row">
+                    <span>Stato</span>
+                    <strong>${formatValue(getProp(entity, "stato"))}</strong>
+                </div>
+                <div class="info-row">
+                    <span>MQ</span>
+                    <strong>${formatDisplayedMq(entity)}</strong>
+                </div>
+                <div class="info-row">
+                    <span>Destinazione dâ€™uso</span>
+                    <strong>${formatValue(getProp(entity, "destinazioneUso"))}</strong>
+                </div>
+            </div>
+        </div>
+    `).join("");
+
+    infoEyebrow.textContent = "Modalita";
+    lotTitle.textContent = "Diagramma";
+
+    infoPanelBody.innerHTML = `
+        <div class="category-summary">
+            <div class="summary-card">
+                <span>Lotti attivi</span>
+                <strong>${items.length}</strong>
+            </div>
+            <div class="summary-card">
+                <span>MQ in focus</span>
+                <strong>${formatMqTotal(totalMq)}</strong>
+            </div>
+        </div>
+
+        <div class="diagram-panel-shell">
+            <div class="diagram-hero">
+                <div class="diagram-placeholder">
+                    <div class="diagram-placeholder-header">
+                        <span class="diagram-kicker">Diagramma personalizzato</span>
+                        <strong>Area pronta per il contenuto custom</strong>
+                    </div>
+
+                    <p class="diagram-placeholder-copy">
+                        Questo spazio ospitera il diagramma definitivo mantenendo lo stesso linguaggio visivo dell'info panel.
+                    </p>
+
+                    <div class="diagram-placeholder-lines" aria-hidden="true">
+                        <div class="diagram-placeholder-line long"></div>
+                        <div class="diagram-placeholder-line medium"></div>
+                        <div class="diagram-placeholder-line long"></div>
+                        <div class="diagram-placeholder-line short"></div>
+                    </div>
+                </div>
+
+                <div class="diagram-side">
+                    <div class="summary-card">
+                        <span>Focus corrente</span>
+                        <strong>${focusNames}</strong>
+                    </div>
+
+                    <div class="lot-card">
+                        <div class="lot-card-title">Stato modalita</div>
+                        <div class="lot-card-grid">
+                            <div class="info-row">
+                                <span>Layout</span>
+                                <strong>Scena 1/3 + panel 2/3</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Legenda</span>
+                                <strong>Nascosta</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="diagram-chip-row">
+                        ${items.map(entity => `<span class="diagram-chip">${entity.name || "Lotto"}</span>`).join("")}
+                    </div>
+                </div>
+            </div>
+
+            <div class="lot-card-list">
+                ${lotCards}
+            </div>
+        </div>
+    `;
+
+    openInfoPanel();
+}
+
+function activateDiagramFilter(button) {
+    setActiveFilter(button);
+
+    if (!isDiagramMode()) {
+        savedStandardOrbitState = getCurrentOrbitState();
+    }
+
+    currentLayoutMode = "diagram";
+    document.body.classList.add("diagram-mode");
+
+    showOnlyLotsByIds(DIAGRAM_LOT_IDS);
+    renderDiagramInfo();
+    focusDiagramCamera();
 }
 
 function getLotsByIds(ids) {
@@ -814,10 +1045,12 @@ function renderLotsGroupInfo(ids, title, eyebrow = "Categoria") {
 }
 
 function showTransformabileLots() {
+    ensureStandardLayout();
     showOnlyLotsByIds(["lotto_2", "lotto_3"]);
 }
 
 function renderTransformabileInfo() {
+    ensureStandardLayout();
     renderLotsGroupInfo(
         ["lotto_2", "lotto_3"],
         "Sfitta C.T. trasformabile"
@@ -825,6 +1058,8 @@ function renderTransformabileInfo() {
 }
 
 function showAllLotti() {
+    ensureStandardLayout();
+
     getAllLotti().forEach(entity => {
         entity.show = true;
     });
@@ -833,6 +1068,8 @@ function showAllLotti() {
 }
 
 function hideAllLotti() {
+    ensureStandardLayout();
+
     getAllLotti().forEach(entity => {
         entity.show = false;
     });
@@ -841,8 +1078,14 @@ function hideAllLotti() {
 }
 
 function showOnlyCategory(categoryName) {
+    ensureStandardLayout();
+
+    const visibleIds = new Set(
+        getFilteredLottiByCategory(categoryName).map(entity => entity.id)
+    );
+
     getAllLotti().forEach(entity => {
-        entity.show = getProp(entity, "categoria") === categoryName;
+        entity.show = visibleIds.has(entity.id);
     });
 
     refreshLotLabelsVisibility();
@@ -856,6 +1099,7 @@ function setActiveFilter(clickedButton) {
 
 function setFilterAndShowCategory(button, categoryName) {
     setActiveFilter(button);
+    ensureStandardLayout();
     showOnlyCategory(categoryName);
     renderCategoryInfo(categoryName);
 }
@@ -871,6 +1115,7 @@ window.renderNonLocabileTotalInfo = renderNonLocabileTotalInfo;
 window.renderPostiAutoInfo = renderPostiAutoInfo;
 window.showTransformabileLots = showTransformabileLots;
 window.renderTransformabileInfo = renderTransformabileInfo;
+window.activateDiagramFilter = activateDiagramFilter;
 
 // =========================
 // BLINK POLIGONO
@@ -969,8 +1214,19 @@ function applyLotLabelResponsiveStyles() {
     });
 }
 
+function getEntityPositions(entities) {
+    return entities.flatMap(entity => getEntityHierarchy(entity)?.positions || []);
+}
+
+function getBoundingSphereFromEntities(entities) {
+    const positions = getEntityPositions(entities);
+    if (!positions.length) return null;
+
+    return Cesium.BoundingSphere.fromPoints(positions);
+}
+
 function getCenterFromEntities(entities) {
-    const positions = entities.flatMap(entity => getEntityHierarchy(entity)?.positions || []);
+    const positions = getEntityPositions(entities);
 
     if (!positions.length) return null;
 
@@ -1433,7 +1689,13 @@ viewer.entities.add({
 });
 
 addLabelsToAllLotti();
-window.addEventListener("resize", applyLotLabelResponsiveStyles);
+window.addEventListener("resize", () => {
+    applyLotLabelResponsiveStyles();
+
+    if (isDiagramMode()) {
+        scheduleViewerLayoutSync();
+    }
+});
 
 // =========================
 // CLICK LOTTI
@@ -1461,7 +1723,10 @@ handler.setInputAction((movement) => {
 
         if (entity.polygon) {
             blinkPolygon(entity);
-            renderSingleLotInfo(entity);
+
+            if (!isDiagramMode()) {
+                renderSingleLotInfo(entity);
+            }
         }
     }
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
