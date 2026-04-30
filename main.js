@@ -52,6 +52,82 @@ const POSTI_AUTO_SFITTA_LOCABILE_MQ = 7.592;
 const POSTI_AUTO_TOTAL_MQ = POSTI_AUTO_LOCATA_MQ + POSTI_AUTO_SFITTA_LOCABILE_MQ;
 const SFITTA_NON_LOCABILE_TOTAL_MQ = 48.338;
 const DIAGRAM_LOT_IDS = ["lotto_2", "lotto_3"];
+const DIAGRAM_DATA = {
+    fondo: [
+        { label: "Location", value: "Via Nizza 150" },
+        { label: "Proprieta", value: "REAM SGR" },
+        { label: "Sounding di mercato", value: "Settembre 2026" },
+        { label: "Mq totali", value: "136.136" }
+    ],
+    assetRows: [
+        {
+            label: "Euro locazione annuo",
+            locati: "&euro; 3.770.600",
+            locare: "-"
+        },
+        {
+            label: "Euro locazione annuo presunto",
+            locati: "-",
+            locare: "&euro; 633.343"
+        },
+        {
+            label: "Mq",
+            locati: "39.040",
+            locare: "13.115"
+        },
+        {
+            label: "&euro;/mq annuo",
+            locati: "97",
+            locare: "48"
+        },
+        {
+            label: "Resa",
+            locati: "9%",
+            locare: "9%"
+        },
+        {
+            label: "Valore presunto",
+            locati: "&euro; 41.895.556",
+            locare: "&euro; 7.037.144"
+        },
+        {
+            label: "&euro;/mq",
+            locati: "1.073",
+            locare: "537"
+        },
+        {
+            label: "Conduttore 1",
+            locati: "Unicredit - Lotto 1",
+            locare: "-"
+        },
+        {
+            label: "Conduttore 2",
+            locati: "Agenzia Entrate - Torre Servizi",
+            locare: "-"
+        },
+        {
+            label: "Conduttore 3",
+            locati: "Asilo - Lotto 5",
+            locare: "-"
+        },
+        {
+            label: "Conduttore 4",
+            locati: "-",
+            locare: "-"
+        }
+    ],
+    transformRows: [
+        { label: "N. camere", studentato: "-", sanitario: "-", businessHotel: "-" },
+        { label: "Mq", studentato: "-", sanitario: "-", businessHotel: "-" },
+        { label: "Hard cost", studentato: "-", sanitario: "-", businessHotel: "-" },
+        { label: "Soft cost", studentato: "-", sanitario: "-", businessHotel: "-" },
+        { label: "Valore presunto", studentato: "-", sanitario: "-", businessHotel: "-" },
+        { label: "Gestore", studentato: "-", sanitario: "-", businessHotel: "-" },
+        { label: "Euro locazione annuo", studentato: "-", sanitario: "-", businessHotel: "-" },
+        { label: "Resa annua", studentato: "-", sanitario: "-", businessHotel: "-" },
+        { label: "Sviluppatore", studentato: "-", sanitario: "-", businessHotel: "-" }
+    ]
+};
 
 // =========================
 // CAMERA ORBITALE
@@ -65,7 +141,7 @@ const defaultOrbitPitch = Cesium.Math.toRadians(-35);
 const defaultOrbitRange = 420;
 const diagramOrbitHeading = Cesium.Math.toRadians(55);
 const diagramOrbitPitch = Cesium.Math.toRadians(-32);
-const diagramOrbitFallbackRange = 560;
+const diagramOrbitFallbackRange = 480;
 
 let orbitTarget = Cesium.Cartesian3.fromDegrees(
     defaultTargetLon,
@@ -356,6 +432,7 @@ const categoryFilterExcludedIds = {
 let currentLayoutMode = "default";
 let savedStandardOrbitState = null;
 let layoutSyncFrame = 0;
+let layoutSyncTimeout = 0;
 
 function isDiagramMode() {
     return currentLayoutMode === "diagram";
@@ -365,12 +442,21 @@ function scheduleViewerLayoutSync() {
     if (layoutSyncFrame) {
         cancelAnimationFrame(layoutSyncFrame);
     }
+    if (layoutSyncTimeout) {
+        clearTimeout(layoutSyncTimeout);
+    }
 
     layoutSyncFrame = requestAnimationFrame(() => {
         layoutSyncFrame = 0;
         viewer.resize();
         updateOrbitCamera();
     });
+
+    layoutSyncTimeout = window.setTimeout(() => {
+        layoutSyncTimeout = 0;
+        viewer.resize();
+        updateOrbitCamera();
+    }, 380);
 }
 
 function getDiagramCameraTarget() {
@@ -382,7 +468,7 @@ function getDiagramCameraRange() {
     const diagramSphere = getBoundingSphereFromEntities(getLotsByIds(DIAGRAM_LOT_IDS));
     if (!diagramSphere) return diagramOrbitFallbackRange;
 
-    return Cesium.Math.clamp(diagramSphere.radius * 6.2, 500, 760);
+    return Cesium.Math.clamp(diagramSphere.radius * 5.4, 420, 680);
 }
 
 function focusDiagramCamera() {
@@ -824,7 +910,7 @@ function renderPostiAutoInfo() {
     openInfoPanel();
 }
 
-function renderDiagramInfo() {
+function renderDiagramInfoLegacy() {
     const items = getLotsByIds(DIAGRAM_LOT_IDS);
     const totalMq = items.reduce((sum, entity) => {
         return sum + toNumberOrZero(getProp(entity, "mq"));
@@ -915,6 +1001,87 @@ function renderDiagramInfo() {
             <div class="lot-card-list">
                 ${lotCards}
             </div>
+        </div>
+    `;
+
+    openInfoPanel();
+}
+
+function renderDiagramInfo() {
+    infoEyebrow.textContent = "Modalita";
+    lotTitle.textContent = "Diagramma";
+
+    const assetRows = DIAGRAM_DATA.assetRows;
+    const transformRows = DIAGRAM_DATA.transformRows;
+
+    const diagramMeta = DIAGRAM_DATA.fondo.map((item) => `
+        <div class="diagram-meta-pill">
+            <span>${item.label}</span>
+            <strong>${item.value}</strong>
+        </div>
+    `).join("");
+
+    const assetRowsHtml = assetRows.map((row, index) => {
+        const dividerClass = index === 0 ? "" : " diagram-matrix-divider";
+        const gridRow = index + 2;
+
+        return `
+            <div class="diagram-label${dividerClass}" style="grid-column: 1; grid-row: ${gridRow};">${row.label}</div>
+            <div class="diagram-matrix-value${dividerClass}" style="grid-column: 2; grid-row: ${gridRow};">${row.locati}</div>
+            <div class="diagram-matrix-value${dividerClass}" style="grid-column: 3; grid-row: ${gridRow};">${row.locare}</div>
+        `;
+    }).join("");
+
+    const transformRowsHtml = transformRows.map((row, index) => {
+        const dividerClass = index === 0 ? "" : " diagram-matrix-divider";
+        const gridRow = index + 2;
+
+        return `
+            <div class="diagram-label${dividerClass}" style="grid-column: 1; grid-row: ${gridRow};">${row.label}</div>
+            <div class="diagram-matrix-value${dividerClass}" style="grid-column: 2; grid-row: ${gridRow};">${row.studentato}</div>
+            <div class="diagram-matrix-value${dividerClass}" style="grid-column: 3; grid-row: ${gridRow};">${row.sanitario}</div>
+            <div class="diagram-matrix-value${dividerClass}" style="grid-column: 4; grid-row: ${gridRow};">${row.businessHotel}</div>
+        `;
+    }).join("");
+
+    infoPanelBody.innerHTML = `
+        <div class="diagram-board">
+            <section class="diagram-strip">
+                <div class="diagram-strip-title">Fondo</div>
+                <div class="diagram-strip-meta">
+                    ${diagramMeta}
+                </div>
+            </section>
+
+            <section class="diagram-section">
+                <div class="diagram-section-scroll">
+                    <div class="diagram-matrix diagram-matrix-dual">
+                        <div class="diagram-matrix-surface" style="grid-column: 2; grid-row: 1 / span ${assetRows.length + 1};"></div>
+                        <div class="diagram-matrix-surface" style="grid-column: 3; grid-row: 1 / span ${assetRows.length + 1};"></div>
+
+                        <div class="diagram-matrix-title" style="grid-column: 2; grid-row: 1;">Asset locati</div>
+                        <div class="diagram-matrix-title" style="grid-column: 3; grid-row: 1;">Asset da locare</div>
+
+                        ${assetRowsHtml}
+                    </div>
+                </div>
+            </section>
+
+            <section class="diagram-section">
+                <div class="diagram-section-heading">Asset da trasformare</div>
+
+                <div class="diagram-section-scroll">
+                    <div class="diagram-matrix diagram-matrix-transform">
+                        <div class="diagram-matrix-surface" style="grid-column: 2 / span 3; grid-row: 1 / span ${transformRows.length + 1};"></div>
+
+                        <div class="diagram-matrix-title" style="grid-column: 2; grid-row: 1;">Studentato</div>
+                        <div class="diagram-matrix-title" style="grid-column: 3; grid-row: 1;">Sanitario</div>
+                        <div class="diagram-matrix-title" style="grid-column: 4; grid-row: 1;">Business Hotel</div>
+
+                        ${transformRowsHtml}
+                    </div>
+                </div>
+            </section>
         </div>
     `;
 
