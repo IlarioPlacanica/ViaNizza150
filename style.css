@@ -198,21 +198,21 @@ body {
     gap: 12px;
     z-index: 20;
     background: var(--panel-bg);
-    padding: 14px 16px;
+    padding: 10px 12px;
     border-radius: var(--radius-pill);
     box-sizing: border-box;
     max-width: calc(100vw - 40px);
 }
 
     .filter-bar button {
-        height: 55px;
-        padding: 0 20px;
+        height: 46px;
+        padding: 0 16px;
         border: 1px solid transparent;
         border-radius: var(--radius-pill);
         background: rgba(255, 255, 255, 0.04);
         color: var(--text-secondary);
         cursor: pointer;
-        font-size: 17px;
+        font-size: 14px;
         font-weight: 600;
         white-space: nowrap;
         min-width: 0;
@@ -438,8 +438,8 @@ body {
 
 body.diagram-mode #cesiumContainer {
     left: 0;
-    right: auto;
-    width: calc(33.333% - 10px);
+    right: 0;
+    width: auto;
 }
 
 body.diagram-mode .legend-panel {
@@ -451,15 +451,11 @@ body.diagram-mode .info-panel {
     right: 20px;
     width: auto;
     padding: 28px;
+    background: rgba(15, 18, 22, 0.72);
 }
 
 body.diagram-mode .info-panel-header {
-    margin-bottom: 22px;
-    padding-right: 0;
-}
-
-body.diagram-mode .info-panel h2 {
-    font-size: clamp(30px, 2.8vw, 38px);
+    display: none;
 }
 
 body.diagram-mode #closePanel {
@@ -502,8 +498,8 @@ body.diagram-mode #closePanel {
 }
 
 .diagram-meta-pill {
-    min-width: 150px;
-    padding: 10px 14px;
+    min-width: 120px;
+    padding: 8px 10px;
     border-radius: var(--radius-pill);
     background: rgba(255, 255, 255, 0.045);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -512,7 +508,7 @@ body.diagram-mode #closePanel {
 
 .diagram-meta-pill span {
     display: block;
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.2;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -521,8 +517,8 @@ body.diagram-mode #closePanel {
 
 .diagram-meta-pill strong {
     display: block;
-    margin-top: 6px;
-    font-size: 15px;
+    margin-top: 4px;
+    font-size: 13px;
     line-height: 1.35;
     font-weight: 500;
     color: var(--text-main);
@@ -690,14 +686,14 @@ body.diagram-mode #closePanel {
     }
 
     .filter-bar {
-        gap: 10px;
-        padding: 12px 14px;
+        gap: 8px;
+        padding: 8px 10px;
     }
 
     .filter-bar button {
-        height: 48px;
-        padding: 0 15px;
-        font-size: 14px;
+        height: 42px;
+        padding: 0 13px;
+        font-size: 12px;
     }
 
     .diagram-section {
@@ -868,14 +864,16 @@ body.diagram-mode #closePanel {
 
     .filter-bar button {
         flex: 0 0 auto;
-        height: clamp(42px, 5.4vh, 46px);
+        height: clamp(38px, 4.8vh, 42px);
         padding: 0 clamp(8px, 0.8vw, 11px);
-        font-size: clamp(9.1px, 0.73vw, 10.4px);
+        font-size: clamp(8.6px, 0.68vw, 9.8px);
         letter-spacing: -0.015em;
     }
 
     body.diagram-mode #cesiumContainer {
-        width: calc(33.333% - (var(--tablet-landscape-gap) / 2));
+        left: 0;
+        right: 0;
+        width: auto;
     }
 
     body.diagram-mode .info-panel {
@@ -964,10 +962,10 @@ body.diagram-mode #closePanel {
 
         .filter-bar button {
             flex: 0 0 auto;
-            height: 42px;
-            padding: 0 13px;
-            font-size: 13px;
-    }
+            height: 40px;
+            padding: 0 12px;
+            font-size: 12px;
+        }
 
     body.diagram-mode #cesiumContainer {
         left: 0;
@@ -1158,9 +1156,9 @@ body.diagram-mode #closePanel {
 
         .filter-bar button {
             flex: 0 0 auto;
-            height: 38px;
-            padding: 0 12px;
-            font-size: 11px;
+            height: 36px;
+            padding: 0 10px;
+            font-size: 10px;
             font-weight: 600;
             border-radius: 999px;
         }

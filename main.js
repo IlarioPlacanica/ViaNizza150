@@ -54,7 +54,6 @@ const SFITTA_NON_LOCABILE_TOTAL_MQ = 48.338;
 const DIAGRAM_LOT_IDS = ["lotto_2", "lotto_3"];
 const DIAGRAM_DATA = {
     fondo: [
-        { label: "Location", value: "Via Nizza 150" },
         { label: "Proprieta", value: "REAM SGR" },
         { label: "Sounding di mercato", value: "Settembre 2026" },
         { label: "Mq totali", value: "136.136" }
@@ -433,6 +432,7 @@ let currentLayoutMode = "default";
 let savedStandardOrbitState = null;
 let layoutSyncFrame = 0;
 let layoutSyncTimeout = 0;
+const diagramTargetScreenX = 1 / 6;
 
 function isDiagramMode() {
     return currentLayoutMode === "diagram";
@@ -459,9 +459,42 @@ function scheduleViewerLayoutSync() {
     }, 380);
 }
 
+function shouldUseDiagramCameraOffset() {
+    return typeof window !== "undefined" && window.innerWidth > 920;
+}
+
+function getHorizontalFovRadians() {
+    const frustum = viewer.camera.frustum;
+    const verticalFov = typeof frustum.fovy === "number" ? frustum.fovy : frustum.fov;
+    const aspectRatio =
+        typeof frustum.aspectRatio === "number" && frustum.aspectRatio > 0
+            ? frustum.aspectRatio
+            : ((canvas.clientWidth || window.innerWidth || 1) / (canvas.clientHeight || window.innerHeight || 1));
+
+    return 2 * Math.atan(Math.tan(verticalFov / 2) * aspectRatio);
+}
+
 function getDiagramCameraTarget() {
-    const target = getCenterFromEntities(getLotsByIds(DIAGRAM_LOT_IDS));
-    return target ? cloneCartesian3(target) : cloneCartesian3(orbitTarget);
+    const baseTarget = getCenterFromEntities(getLotsByIds(DIAGRAM_LOT_IDS));
+    if (!baseTarget) return cloneCartesian3(orbitTarget);
+    if (!shouldUseDiagramCameraOffset()) return cloneCartesian3(baseTarget);
+
+    const desiredNdcX = ((diagramTargetScreenX - 0.5) / 0.5);
+    const halfHorizontalFov = getHorizontalFovRadians() / 2;
+    const targetAngle = Math.atan(Math.tan(halfHorizontalFov) * Math.abs(desiredNdcX));
+    const offsetDistance = getDiagramCameraRange() * Math.tan(targetAngle);
+
+    const rightOffsetLocal = new Cesium.Cartesian3(
+        Math.cos(diagramOrbitHeading) * offsetDistance,
+        -Math.sin(diagramOrbitHeading) * offsetDistance,
+        0
+    );
+
+    return Cesium.Matrix4.multiplyByPoint(
+        Cesium.Transforms.eastNorthUpToFixedFrame(baseTarget),
+        rightOffsetLocal,
+        new Cesium.Cartesian3()
+    );
 }
 
 function getDiagramCameraRange() {
@@ -1008,8 +1041,8 @@ function renderDiagramInfoLegacy() {
 }
 
 function renderDiagramInfo() {
-    infoEyebrow.textContent = "Modalita";
-    lotTitle.textContent = "Diagramma";
+    infoEyebrow.textContent = "";
+    lotTitle.textContent = "";
 
     const assetRows = DIAGRAM_DATA.assetRows;
     const transformRows = DIAGRAM_DATA.transformRows;
