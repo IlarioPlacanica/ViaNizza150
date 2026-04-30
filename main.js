@@ -163,8 +163,10 @@ function updateOrbitCamera() {
         new Cesium.HeadingPitchRange(orbitHeading, orbitPitch, orbitRange)
     );
 
-    if (isDiagramMode() && shouldUseDiagramCameraOffset()) {
-        viewer.camera.moveRight(getDiagramCameraOffsetDistance());
+    if (shouldUseDiagramCameraOffset() && diagramCameraOffsetProgress > 0) {
+        viewer.camera.moveRight(
+            getDiagramCameraOffsetDistance() * diagramCameraOffsetProgress
+        );
     }
 }
 
@@ -452,6 +454,7 @@ let savedStandardOrbitState = null;
 let layoutSyncFrame = 0;
 let layoutSyncTimeout = 0;
 let orbitAnimationFrame = 0;
+let diagramCameraOffsetProgress = 0;
 const diagramTargetScreenX = 1 / 4;
 
 function isDiagramMode() {
@@ -485,7 +488,7 @@ function stopOrbitAnimation() {
     orbitAnimationFrame = 0;
 }
 
-function animateOrbitToState(state, duration = 1150) {
+function animateOrbitToState(state, duration = 1150, endOffsetProgress = diagramCameraOffsetProgress) {
     if (!state?.target) return;
 
     stopOrbitAnimation();
@@ -497,6 +500,8 @@ function animateOrbitToState(state, duration = 1150) {
         pitch: state.pitch,
         range: state.range
     };
+    const startOffsetProgress = diagramCameraOffsetProgress;
+    const targetOffsetProgress = endOffsetProgress;
 
     const startTime = performance.now();
 
@@ -514,6 +519,11 @@ function animateOrbitToState(state, duration = 1150) {
         orbitHeading = lerpAngle(startState.heading, targetState.heading, eased);
         orbitPitch = lerpAngle(startState.pitch, targetState.pitch, eased);
         orbitRange = lerpNumber(startState.range, targetState.range, eased);
+        diagramCameraOffsetProgress = lerpNumber(
+            startOffsetProgress,
+            targetOffsetProgress,
+            eased
+        );
 
         updateOrbitCamera();
 
@@ -523,6 +533,7 @@ function animateOrbitToState(state, duration = 1150) {
         }
 
         orbitAnimationFrame = 0;
+        diagramCameraOffsetProgress = targetOffsetProgress;
         applyOrbitState(targetState);
     };
 
@@ -572,7 +583,11 @@ function focusDiagramCamera() {
         range: getDiagramCameraRange()
     };
 
-    animateOrbitToState(targetState, 1250);
+    animateOrbitToState(
+        targetState,
+        1250,
+        shouldUseDiagramCameraOffset() ? 1 : 0
+    );
     scheduleViewerLayoutSync();
 }
 
@@ -583,7 +598,7 @@ function exitDiagramMode() {
     document.body.classList.remove("diagram-mode");
 
     if (savedStandardOrbitState) {
-        animateOrbitToState(savedStandardOrbitState, 1050);
+        animateOrbitToState(savedStandardOrbitState, 1050, 0);
         savedStandardOrbitState = null;
     }
 
