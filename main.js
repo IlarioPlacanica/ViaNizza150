@@ -432,7 +432,7 @@ const categoryFilterExcludedIds = {
     azzurro: new Set(["lotto_2", "lotto_3"])
 };
 
-let currentLayoutMode = "default";
+var currentLayoutMode = "default";
 let savedStandardOrbitState = null;
 let layoutSyncFrame = 0;
 let layoutSyncTimeout = 0;
