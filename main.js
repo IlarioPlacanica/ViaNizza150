@@ -53,10 +53,15 @@ const POSTI_AUTO_TOTAL_MQ = POSTI_AUTO_LOCATA_MQ + POSTI_AUTO_SFITTA_LOCABILE_MQ
 const SFITTA_NON_LOCABILE_TOTAL_MQ = 48.338;
 const DIAGRAM_LOT_IDS = ["lotto_2", "lotto_3"];
 const DIAGRAM_DATA = {
+    stripTitle: "Fondo / Club Deal acquisisce intero asset",
     fondo: [
-        { label: "Proprieta", value: "REAM SGR" },
-        { label: "Sounding di mercato", value: "Settembre 2026" },
-        { label: "Mq totali", value: "136.136" }
+        { text: "Valore presunto: 90 mln" },
+        { text: "Sounding di mercato: Settembre 2026" },
+        { text: "Mq totali: 136.136" },
+        { text: "Costo stimato di trasformazione" },
+        { text: "Costo stimao totale investimneto" },
+        { text: "MOIC" },
+        { text: "IRR" }
     ],
     assetRows: [
         {
@@ -115,16 +120,23 @@ const DIAGRAM_DATA = {
             locare: "-"
         }
     ],
+    transformColumns: [
+        { key: "studentato", title: "Studentato" },
+        { key: "sanitario", title: "Sanitario" },
+        { key: "businessHotel", title: "Business Hotel" },
+        { key: "areeComuni", title: "Aree comuni" },
+        { key: "ufficiSfittiDaLocare", title: "Uffici sfitti da locare" }
+    ],
     transformRows: [
-        { label: "N. camere", studentato: "-", sanitario: "-", businessHotel: "-" },
-        { label: "Mq", studentato: "-", sanitario: "-", businessHotel: "-" },
-        { label: "Hard cost", studentato: "-", sanitario: "-", businessHotel: "-" },
-        { label: "Soft cost", studentato: "-", sanitario: "-", businessHotel: "-" },
-        { label: "Valore presunto", studentato: "-", sanitario: "-", businessHotel: "-" },
-        { label: "Gestore", studentato: "-", sanitario: "-", businessHotel: "-" },
-        { label: "Euro locazione annuo", studentato: "-", sanitario: "-", businessHotel: "-" },
-        { label: "Resa annua", studentato: "-", sanitario: "-", businessHotel: "-" },
-        { label: "Sviluppatore", studentato: "-", sanitario: "-", businessHotel: "-" }
+        { label: "N. camere", studentato: "-", sanitario: "-", businessHotel: "-", areeComuni: "-", ufficiSfittiDaLocare: "-" },
+        { label: "Mq", studentato: "-", sanitario: "-", businessHotel: "-", areeComuni: "-", ufficiSfittiDaLocare: "-" },
+        { label: "Hard cost", studentato: "-", sanitario: "-", businessHotel: "-", areeComuni: "-", ufficiSfittiDaLocare: "-" },
+        { label: "Soft cost", studentato: "-", sanitario: "-", businessHotel: "-", areeComuni: "-", ufficiSfittiDaLocare: "-" },
+        { label: "Valore presunto", studentato: "-", sanitario: "-", businessHotel: "-", areeComuni: "-", ufficiSfittiDaLocare: "-" },
+        { label: "Gestore", studentato: "-", sanitario: "-", businessHotel: "-", areeComuni: "-", ufficiSfittiDaLocare: "-" },
+        { label: "Euro locazione annuo", studentato: "-", sanitario: "-", businessHotel: "-", areeComuni: "-", ufficiSfittiDaLocare: "-" },
+        { label: "Resa annua", studentato: "-", sanitario: "-", businessHotel: "-", areeComuni: "-", ufficiSfittiDaLocare: "-" },
+        { label: "Sviluppatore", studentato: "-", sanitario: "-", businessHotel: "-", areeComuni: "-", ufficiSfittiDaLocare: "-" }
     ]
 };
 
@@ -1118,12 +1130,14 @@ function renderDiagramInfo() {
     lotTitle.textContent = "";
 
     const assetRows = DIAGRAM_DATA.assetRows;
+    const transformColumns = DIAGRAM_DATA.transformColumns;
     const transformRows = DIAGRAM_DATA.transformRows;
 
     const diagramMeta = DIAGRAM_DATA.fondo.map((item) => `
-        <div class="diagram-meta-pill">
-            <span>${item.label}</span>
-            <strong>${item.value}</strong>
+        <div class="diagram-meta-pill${item.text ? " diagram-meta-pill-single" : ""}">
+            ${item.text
+                ? `<strong>${item.text}</strong>`
+                : `<span>${item.label}</span><strong>${item.value}</strong>`}
         </div>
     `).join("");
 
@@ -1141,19 +1155,24 @@ function renderDiagramInfo() {
     const transformRowsHtml = transformRows.map((row, index) => {
         const dividerClass = index === 0 ? "" : " diagram-matrix-divider";
         const gridRow = index + 2;
+        const valueCells = transformColumns.map((column, columnIndex) => `
+            <div class="diagram-matrix-value${dividerClass}" style="grid-column: ${columnIndex + 2}; grid-row: ${gridRow};">${row[column.key]}</div>
+        `).join("");
 
         return `
             <div class="diagram-label${dividerClass}" style="grid-column: 1; grid-row: ${gridRow};">${row.label}</div>
-            <div class="diagram-matrix-value${dividerClass}" style="grid-column: 2; grid-row: ${gridRow};">${row.studentato}</div>
-            <div class="diagram-matrix-value${dividerClass}" style="grid-column: 3; grid-row: ${gridRow};">${row.sanitario}</div>
-            <div class="diagram-matrix-value${dividerClass}" style="grid-column: 4; grid-row: ${gridRow};">${row.businessHotel}</div>
+            ${valueCells}
         `;
     }).join("");
+
+    const transformTitlesHtml = transformColumns.map((column, index) => `
+        <div class="diagram-matrix-title" style="grid-column: ${index + 2}; grid-row: 1;">${column.title}</div>
+    `).join("");
 
     infoPanelBody.innerHTML = `
         <div class="diagram-board">
             <section class="diagram-strip">
-                <div class="diagram-strip-title">Fondo</div>
+                <div class="diagram-strip-title">${DIAGRAM_DATA.stripTitle}</div>
                 <div class="diagram-strip-meta">
                     ${diagramMeta}
                 </div>
@@ -1178,11 +1197,9 @@ function renderDiagramInfo() {
 
                 <div class="diagram-section-scroll">
                     <div class="diagram-matrix diagram-matrix-transform">
-                        <div class="diagram-matrix-surface" style="grid-column: 2 / span 3; grid-row: 1 / span ${transformRows.length + 1};"></div>
+                        <div class="diagram-matrix-surface" style="grid-column: 2 / span ${transformColumns.length}; grid-row: 1 / span ${transformRows.length + 1};"></div>
 
-                        <div class="diagram-matrix-title" style="grid-column: 2; grid-row: 1;">Studentato</div>
-                        <div class="diagram-matrix-title" style="grid-column: 3; grid-row: 1;">Sanitario</div>
-                        <div class="diagram-matrix-title" style="grid-column: 4; grid-row: 1;">Business Hotel</div>
+                        ${transformTitlesHtml}
 
                         ${transformRowsHtml}
                     </div>

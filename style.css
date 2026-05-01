@@ -447,7 +447,7 @@ body.diagram-mode .legend-panel {
 }
 
 body.diagram-mode .info-panel {
-    left: calc(50% + 12px);
+    left: calc(33.333% + 12px);
     right: 20px;
     width: auto;
     padding: 28px;
@@ -480,8 +480,8 @@ body.diagram-mode #closePanel {
 }
 
 .diagram-strip-title {
-    font-size: clamp(28px, 2.2vw, 34px);
-    line-height: 1;
+    font-size: clamp(22px, 1.9vw, 30px);
+    line-height: 1.08;
     font-weight: 500;
     letter-spacing: -0.03em;
     text-transform: uppercase;
@@ -498,8 +498,8 @@ body.diagram-mode #closePanel {
 }
 
 .diagram-meta-pill {
-    min-width: 120px;
-    padding: 8px 10px;
+    min-width: 0;
+    padding: 5px 10px;
     border-radius: var(--radius-pill);
     background: rgba(255, 255, 255, 0.045);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -524,6 +524,21 @@ body.diagram-mode #closePanel {
     color: var(--text-main);
 }
 
+.diagram-meta-pill-single {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 5px 14px;
+}
+
+.diagram-meta-pill-single strong {
+    margin-top: 0;
+    font-size: 12px;
+    line-height: 1.15;
+    font-weight: 500;
+}
+
 .diagram-section {
     padding: 18px;
 }
@@ -540,8 +555,8 @@ body.diagram-mode #closePanel {
 }
 
 .diagram-section-transform {
-    --diagram-transform-label-width: 170px;
-    --diagram-transform-gap: 18px;
+    --diagram-transform-label-width: 136px;
+    --diagram-transform-gap: 12px;
 }
 
 .diagram-section-transform .diagram-section-heading {
@@ -554,6 +569,10 @@ body.diagram-mode #closePanel {
     overflow-y: hidden;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.diagram-section-transform .diagram-section-scroll {
+    overflow-x: hidden;
 }
 
 .diagram-section-scroll::-webkit-scrollbar {
@@ -587,7 +606,9 @@ body.diagram-mode #closePanel {
 }
 
 .diagram-matrix-transform {
-    grid-template-columns: minmax(var(--diagram-transform-label-width, 170px), 0.82fr) repeat(3, minmax(190px, 1fr));
+    width: 100%;
+    gap: 8px 10px;
+    grid-template-columns: minmax(var(--diagram-transform-label-width, 136px), 0.78fr) repeat(5, minmax(0, 1fr));
 }
 
 .diagram-matrix-surface {
@@ -633,6 +654,29 @@ body.diagram-mode #closePanel {
     font-size: 14px;
     line-height: 1.35;
     color: var(--text-main);
+}
+
+.diagram-section-transform .diagram-matrix-title {
+    margin: 0 8px;
+    padding: 10px 6px 8px;
+    font-size: 12px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.diagram-section-transform .diagram-label {
+    padding-right: 8px;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.diagram-section-transform .diagram-matrix-value {
+    justify-content: center;
+    padding: 0 8px;
+    font-size: 12px;
+    line-height: 1.3;
+    text-align: center;
+    overflow-wrap: anywhere;
 }
 
 .diagram-matrix-divider {
@@ -723,7 +767,7 @@ body.diagram-mode #closePanel {
     }
 
     .diagram-matrix-transform {
-        grid-template-columns: minmax(150px, 0.76fr) repeat(3, minmax(170px, 1fr));
+        grid-template-columns: minmax(150px, 0.76fr) repeat(5, minmax(160px, 1fr));
     }
 }
 
@@ -891,7 +935,7 @@ body.diagram-mode #closePanel {
     }
 
     body.diagram-mode .info-panel {
-        left: calc(50% + (var(--tablet-landscape-gap) / 2));
+        left: calc(33.333% + (var(--tablet-landscape-gap) / 2));
         right: var(--tablet-landscape-gap);
         bottom: calc(var(--tablet-landscape-filter-bottom) + var(--tablet-landscape-filter-shell-height) + var(--tablet-landscape-gap));
         width: auto;
