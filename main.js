@@ -55,13 +55,13 @@ const DIAGRAM_LOT_IDS = ["lotto_2", "lotto_3"];
 const DIAGRAM_DATA = {
     stripTitle: "Fondo / Club Deal acquisisce intero asset",
     fondo: [
-        { text: "Valore presunto: 90 mln" },
-        { text: "Sounding di mercato: Settembre 2026" },
-        { text: "Mq totali: 136.136" },
-        { text: "Costo stimato di trasformazione" },
-        { text: "Costo stimao totale investimneto" },
-        { text: "MOIC" },
-        { text: "IRR" }
+        { label: "Valore presunto:", value: "90 mln" },
+        { label: "Sounding di mercato:", value: "Settembre 2026" },
+        { label: "Mq totali:", value: "136.136" },
+        { label: "Costo stimato di trasformazione:", value: "" },
+        { label: "Costo stimato totale investimento:", value: "" },
+        { label: "MOIC:", value: "" },
+        { label: "IRR:", value: "" }
     ],
     assetRows: [
         {
@@ -1134,10 +1134,9 @@ function renderDiagramInfo() {
     const transformRows = DIAGRAM_DATA.transformRows;
 
     const diagramMeta = DIAGRAM_DATA.fondo.map((item) => `
-        <div class="diagram-meta-pill${item.text ? " diagram-meta-pill-single" : ""}">
-            ${item.text
-                ? `<strong>${item.text}</strong>`
-                : `<span>${item.label}</span><strong>${item.value}</strong>`}
+        <div class="diagram-meta-pill">
+            <span class="diagram-meta-pill-label">${item.label}</span>
+            <strong class="diagram-meta-pill-value${item.value ? "" : " is-empty"}">${item.value || "&nbsp;"}</strong>
         </div>
     `).join("");
 
