@@ -610,6 +610,21 @@ body.diagram-mode #closePanel {
     z-index: 0;
 }
 
+.diagram-matrix-surface--yellow {
+    background: linear-gradient(180deg, rgba(255, 214, 10, 0.30), rgba(255, 214, 10, 0.16));
+    border-color: rgba(255, 214, 10, 0.30);
+}
+
+.diagram-matrix-surface--blue {
+    background: linear-gradient(180deg, rgba(115, 191, 255, 0.30), rgba(115, 191, 255, 0.16));
+    border-color: rgba(115, 191, 255, 0.30);
+}
+
+.diagram-matrix-surface--red {
+    background: linear-gradient(180deg, rgba(255, 84, 84, 0.30), rgba(255, 84, 84, 0.16));
+    border-color: rgba(255, 84, 84, 0.30);
+}
+
 .diagram-matrix-title {
     align-self: end;
     justify-self: stretch;

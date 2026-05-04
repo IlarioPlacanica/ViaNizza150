@@ -51,17 +51,17 @@ const POSTI_AUTO_LOCATA_MQ = 4.827;
 const POSTI_AUTO_SFITTA_LOCABILE_MQ = 7.592;
 const POSTI_AUTO_TOTAL_MQ = POSTI_AUTO_LOCATA_MQ + POSTI_AUTO_SFITTA_LOCABILE_MQ;
 const SFITTA_NON_LOCABILE_TOTAL_MQ = 48.338;
-const DIAGRAM_LOT_IDS = ["lotto_2", "lotto_3"];
+const DIAGRAM_LOT_IDS = ["studentato", "sanitario", "business_hotel"];
 const DIAGRAM_DATA = {
     stripTitle: "Fondo / Club Deal acquisisce intero asset",
     fondo: [
-        { label: "Valore presunto:", value: "90 mln" },
-        { label: "Sounding di mercato:", value: "Settembre 2026" },
+        { label: "Valore presunto:", value: "- mln" },
+        { label: "Sounding di mercato:", value: "-" },
         { label: "Mq totali:", value: "136.136" },
-        { label: "Costo stimato di trasformazione:", value: "" },
-        { label: "Costo stimato totale investimento:", value: "" },
-        { label: "MOIC:", value: "" },
-        { label: "IRR:", value: "" }
+        { label: "Costo stimato di trasformazione:", value: "-" },
+        { label: "Costo stimato totale investimento:", value: "-" },
+        { label: "MOIC:", value: "-" },
+        { label: "IRR:", value: "-" }
     ],
     assetRows: [
         {
@@ -121,9 +121,9 @@ const DIAGRAM_DATA = {
         }
     ],
     transformColumns: [
-        { key: "studentato", title: "Studentato" },
-        { key: "sanitario", title: "Sanitario" },
-        { key: "businessHotel", title: "Business Hotel" },
+        { key: "studentato", title: "Studentato", surfaceClass: "diagram-matrix-surface--yellow" },
+        { key: "sanitario", title: "Sanitario", surfaceClass: "diagram-matrix-surface--blue" },
+        { key: "businessHotel", title: "Business Hotel", surfaceClass: "diagram-matrix-surface--red" },
         { key: "areeComuni", title: "Aree comuni" },
         { key: "ufficiSfittiDaLocare", title: "Uffici sfitti da locare" }
     ],
@@ -383,7 +383,6 @@ canvas.addEventListener("wheel", (event) => {
 // DEBUG PUNTI / PREVIEW
 // =========================
 
-/*
 const lottoPoints = [];
 let lottoPointEntities = [];
 let lottoPolygonEntity = null;
@@ -427,7 +426,6 @@ function createLivePreview() {
         });
     }
 }
-*/
 
 // =========================
 // UI / INFO PANEL
@@ -686,6 +684,10 @@ function getAllLotti() {
     return viewer.entities.values.filter(entity =>
         entity.polygon && entity.properties && entity.properties.categoria
     );
+}
+
+function isWorkflowOnlyLot(entity) {
+    return getProp(entity, "categoria") === "workflow";
 }
 
 function getLottiByCategory(categoryName) {
@@ -1168,6 +1170,10 @@ function renderDiagramInfo() {
         <div class="diagram-matrix-title" style="grid-column: ${index + 2}; grid-row: 1;">${column.title}</div>
     `).join("");
 
+    const transformSurfacesHtml = transformColumns.map((column, index) => `
+        <div class="diagram-matrix-surface${column.surfaceClass ? ` ${column.surfaceClass}` : ""}" style="grid-column: ${index + 2}; grid-row: 1 / span ${transformRows.length + 1};"></div>
+    `).join("");
+
     infoPanelBody.innerHTML = `
         <div class="diagram-board">
             <section class="diagram-strip">
@@ -1196,7 +1202,7 @@ function renderDiagramInfo() {
 
                 <div class="diagram-section-scroll">
                     <div class="diagram-matrix diagram-matrix-transform">
-                        <div class="diagram-matrix-surface" style="grid-column: 2 / span ${transformColumns.length}; grid-row: 1 / span ${transformRows.length + 1};"></div>
+                        ${transformSurfacesHtml}
 
                         ${transformTitlesHtml}
 
@@ -1350,7 +1356,7 @@ function showAllLotti() {
     ensureStandardLayout();
 
     getAllLotti().forEach(entity => {
-        entity.show = true;
+        entity.show = !isWorkflowOnlyLot(entity);
     });
 
     refreshLotLabelsVisibility();
@@ -1712,6 +1718,91 @@ viewer.entities.add({
         destinazioneUso: "Uffici",
         sfittaNonLocabile: 0,
         categoria: "azzurro"
+    }
+});
+
+viewer.entities.add({
+    id: "studentato",
+    name: "STUDENTATO",
+    polygon: {
+        hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights([
+            7.66845928906384, 45.039829188714585, 315,
+            7.668773145129371, 45.039759873324016, 315,
+            7.66879254054785, 45.03975473447619, 315,
+            7.669055063249236, 45.04049111485038, 315,
+            7.668707964637738, 45.04056153957924, 315
+        ]),
+        material: new Cesium.ColorMaterialProperty(
+            Cesium.Color.YELLOW.withAlpha(0.28)
+        ),
+        perPositionHeight: true,
+        extrudedHeight: 285,
+        outline: false
+    },
+    properties: {
+        stato: "STUDENTATO",
+        mq: 11.905,
+        reddito: "-",
+        scadenzaContratto: "-",
+        destinazioneUso: "Studentato",
+        sfittaNonLocabile: 0,
+        categoria: "workflow"
+    }
+});
+
+viewer.entities.add({
+    id: "sanitario",
+    name: "SANITARIO",
+    polygon: {
+        hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights([
+            7.66911396131438, 45.039405477853656, 315,
+            7.668359320781613, 45.039560608104615, 315,
+            7.66845928906384, 45.039829188714585, 315,
+            7.669219305617008, 45.039675681911206, 315
+        ]),
+        material: new Cesium.ColorMaterialProperty(
+            Cesium.Color.BLUE.withAlpha(0.28)
+        ),
+        perPositionHeight: true,
+        extrudedHeight: 285,
+        outline: false
+    },
+    properties: {
+        stato: "SANITARIO",
+        mq: 8.198,
+        reddito: "-",
+        scadenzaContratto: "-",
+        destinazioneUso: "Sanitario",
+        sfittaNonLocabile: 0,
+        categoria: "workflow"
+    }
+});
+
+viewer.entities.add({
+    id: "business_hotel",
+    name: "BUSINESS HOTEL",
+    polygon: {
+        hierarchy: Cesium.Cartesian3.fromDegreesArrayHeights([
+            7.669947429953458, 45.039528616641526, 315,
+            7.669840795164153, 45.03925606377818, 315,
+            7.66911396131438, 45.039405477853656, 315,
+            7.669219305617008, 45.039675681911206, 315
+        ]),
+        material: new Cesium.ColorMaterialProperty(
+            Cesium.Color.RED.withAlpha(0.28)
+        ),
+        perPositionHeight: true,
+        extrudedHeight: 285,
+        outline: false
+    },
+    properties: {
+        stato: "BUSINESS HOTEL",
+        mq: 7.948,
+        reddito: "-",
+        scadenzaContratto: "-",
+        destinazioneUso: "Business Hotel",
+        sfittaNonLocabile: 0,
+        categoria: "workflow"
     }
 });
 
