@@ -52,6 +52,7 @@ const POSTI_AUTO_SFITTA_LOCABILE_MQ = 7.592;
 const POSTI_AUTO_TOTAL_MQ = POSTI_AUTO_LOCATA_MQ + POSTI_AUTO_SFITTA_LOCABILE_MQ;
 const SFITTA_NON_LOCABILE_TOTAL_MQ = 48.338;
 const DIAGRAM_LOT_IDS = ["studentato", "sanitario", "business_hotel"];
+const WORKFLOW_TRANSFORM_LOT_IDS = new Set(DIAGRAM_LOT_IDS);
 const DIAGRAM_DATA = {
     stripTitle: "Fondo / Club Deal acquisisce intero asset",
     fondo: [
@@ -72,7 +73,7 @@ const DIAGRAM_DATA = {
         {
             label: "Euro locazione annuo presunto",
             locati: "-",
-            locare: "&euro; 633.343"
+            locare: "-"
         },
         {
             label: "Mq",
@@ -81,23 +82,23 @@ const DIAGRAM_DATA = {
         },
         {
             label: "&euro;/mq annuo",
-            locati: "97",
-            locare: "48"
+            locati: "-",
+            locare: "-"
         },
         {
             label: "Resa",
-            locati: "9%",
-            locare: "9%"
+            locati: "-",
+            locare: "-"
         },
         {
             label: "Valore presunto",
-            locati: "&euro; 41.895.556",
-            locare: "&euro; 7.037.144"
+            locati: "-",
+            locare: "-"
         },
         {
             label: "&euro;/mq",
-            locati: "1.073",
-            locare: "537"
+            locati: "-",
+            locare: "-"
         },
         {
             label: "Conduttore 1",
@@ -1197,7 +1198,7 @@ function renderDiagramInfo() {
                 </div>
             </section>
 
-            <section class="diagram-section diagram-section-transform">
+            <section class="diagram-section diagram-section-transform" data-workflow-section="transform">
                 <div class="diagram-section-heading">Asset da trasformare</div>
 
                 <div class="diagram-section-scroll">
@@ -1214,6 +1215,28 @@ function renderDiagramInfo() {
     `;
 
     openInfoPanel();
+}
+
+function scrollWorkflowToTransformSection() {
+    const transformSection = infoPanelBody.querySelector('[data-workflow-section="transform"]');
+    if (!transformSection) return;
+
+    const targetTop = Math.max(
+        transformSection.offsetTop + infoPanelBody.offsetTop - 12,
+        0
+    );
+
+    infoPanel.scrollTo({
+        top: targetTop,
+        behavior: "smooth"
+    });
+}
+
+function handleWorkflowLotClick(entity) {
+    if (!isDiagramMode()) return;
+    if (!WORKFLOW_TRANSFORM_LOT_IDS.has(entity.id)) return;
+
+    scrollWorkflowToTransformSection();
 }
 
 function activateDiagramFilter(button) {
@@ -2104,7 +2127,9 @@ handler.setInputAction((movement) => {
         if (entity.polygon) {
             blinkPolygon(entity);
 
-            if (!isDiagramMode()) {
+            if (isDiagramMode()) {
+                handleWorkflowLotClick(entity);
+            } else {
                 renderSingleLotInfo(entity);
             }
         }
