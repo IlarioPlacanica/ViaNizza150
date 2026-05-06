@@ -142,7 +142,6 @@ const DIAGRAM_DATA = {
 };
 
 const WORKFLOW_API_URL = "https://script.google.com/macros/s/AKfycbxWBmBAYcOLhjnKLwJpRlYS_SVUZG-GhzR8BZ11Mh1lNK4CM-nTcfnqR5kv7xelwwE/exec";
-const WORKFLOW_PIN_STORAGE_KEY = "viaNizzaWorkflowEditorPin";
 const WORKFLOW_REQUEST_TIMEOUT = 12000;
 const WORKFLOW_SHEET_COLUMNS = {
     fondo: 2,
@@ -160,6 +159,7 @@ let workflowDataLoaded = false;
 let workflowDataLoading = false;
 let workflowRequestCounter = 0;
 let workflowUnlockRequestInFlight = false;
+let workflowEditorPin = "";
 
 function cloneWorkflowData(data) {
     return {
@@ -304,7 +304,7 @@ function renderWorkflowInput(value, row, col, rowLabel, columnTitle, key) {
 }
 
 function isWorkflowUnlocked() {
-    return Boolean(window.sessionStorage.getItem(WORKFLOW_PIN_STORAGE_KEY));
+    return Boolean(workflowEditorPin);
 }
 
 function getWorkflowUnlockIcon() {
@@ -423,7 +423,7 @@ function unlockWorkflowEditing() {
                 throw new Error(response?.error || "PIN non valido.");
             }
 
-            window.sessionStorage.setItem(WORKFLOW_PIN_STORAGE_KEY, normalizedPin);
+            workflowEditorPin = normalizedPin;
 
             if (isDiagramMode()) {
                 renderDiagramInfo();
@@ -440,7 +440,7 @@ function unlockWorkflowEditing() {
 }
 
 function clearWorkflowPin() {
-    window.sessionStorage.removeItem(WORKFLOW_PIN_STORAGE_KEY);
+    workflowEditorPin = "";
 }
 
 function updateWorkflowDataCell(row, col, value) {
@@ -480,7 +480,7 @@ function saveWorkflowInput(input) {
         return;
     }
 
-    const pin = window.sessionStorage.getItem(WORKFLOW_PIN_STORAGE_KEY) || "";
+    const pin = workflowEditorPin;
 
     if (!pin) {
         input.value = previousValue;
@@ -511,7 +511,7 @@ function saveWorkflowInput(input) {
             }
 
             const savedValue = getWorkflowDisplayValue(response.value || nextValue);
-            window.sessionStorage.setItem(WORKFLOW_PIN_STORAGE_KEY, pin);
+            workflowEditorPin = pin;
             input.value = savedValue;
             input.dataset.workflowPrevious = savedValue;
             updateWorkflowDataCell(row, col, savedValue);
