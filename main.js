@@ -142,9 +142,10 @@ const DIAGRAM_DATA = {
 };
 
 const WORKFLOW_API_URL = "https://script.google.com/macros/s/AKfycbxWBmBAYcOLhjnKLwJpRlYS_SVUZG-GhzR8BZ11Mh1lNK4CM-nTcfnqR5kv7xelwwE/exec";
-const WORKFLOW_PIN_STORAGE_KEY = "viaNizzaWorkflowPin";
+const WORKFLOW_PIN_STORAGE_KEY = "viaNizzaWorkflowEditorPin";
 const WORKFLOW_REQUEST_TIMEOUT = 12000;
 const WORKFLOW_SHEET_COLUMNS = {
+    fondo: 2,
     locati: 3,
     locare: 4,
     studentato: 5,
@@ -158,6 +159,7 @@ let workflowData = cloneWorkflowData(DIAGRAM_DATA);
 let workflowDataLoaded = false;
 let workflowDataLoading = false;
 let workflowRequestCounter = 0;
+let workflowUnlockRequestInFlight = false;
 
 function cloneWorkflowData(data) {
     return {
@@ -282,6 +284,7 @@ function getWorkflowDisplayValue(value) {
 function renderWorkflowInput(value, row, col, rowLabel, columnTitle, key) {
     const displayValue = getWorkflowDisplayValue(value);
     const ariaLabel = `${rowLabel} ${columnTitle}`;
+    const lockedAttribute = isWorkflowUnlocked() ? "" : ' readonly aria-readonly="true"';
 
     return `
         <input
@@ -295,7 +298,48 @@ function renderWorkflowInput(value, row, col, rowLabel, columnTitle, key) {
             aria-label="${escapeWorkflowText(ariaLabel)}"
             autocomplete="off"
             spellcheck="false"
+            ${lockedAttribute}
         >
+    `;
+}
+
+function isWorkflowUnlocked() {
+    return Boolean(window.sessionStorage.getItem(WORKFLOW_PIN_STORAGE_KEY));
+}
+
+function getWorkflowUnlockIcon() {
+    if (isWorkflowUnlocked()) {
+        return `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 10V8a5 5 0 0 1 9.1-2.85"></path>
+                <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+                <path d="M12 14v2"></path>
+            </svg>
+        `;
+    }
+
+    return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+            <path d="M8 10V8a4 4 0 0 1 8 0v2"></path>
+            <path d="M12 14v2"></path>
+        </svg>
+    `;
+}
+
+function renderWorkflowUnlockButton() {
+    const unlocked = isWorkflowUnlocked();
+    const label = unlocked ? "Workflow sbloccato" : "Sblocca modifiche workflow";
+
+    return `
+        <button
+            type="button"
+            class="workflow-unlock-button${unlocked ? " is-unlocked" : ""}"
+            aria-label="${label}"
+            title="${label}"
+        >
+            ${getWorkflowUnlockIcon()}
+        </button>
     `;
 }
 
@@ -305,6 +349,33 @@ function renderWorkflowValueCell(value, row, col, rowLabel, columnTitle, key, di
             ${renderWorkflowInput(value, row, col, rowLabel, columnTitle, key)}
         </div>
     `;
+}
+
+function renderWorkflowMetaValue(item, index) {
+    const sheetRow = index + 4;
+
+    return `
+        <input
+            class="workflow-value-input workflow-meta-input"
+            type="text"
+            value="${escapeWorkflowText(getWorkflowDisplayValue(item.value))}"
+            data-workflow-row="${sheetRow}"
+            data-workflow-col="${WORKFLOW_SHEET_COLUMNS.fondo}"
+            data-workflow-key="fondo"
+            data-workflow-previous="${escapeWorkflowText(getWorkflowDisplayValue(item.value))}"
+            aria-label="${escapeWorkflowText(item.label)}"
+            autocomplete="off"
+            spellcheck="false"
+            ${isWorkflowUnlocked() ? "" : 'readonly aria-readonly="true"'}
+        >
+    `;
+}
+
+function bindWorkflowUnlockButton() {
+    const unlockButton = infoPanelBody.querySelector(".workflow-unlock-button");
+    if (!unlockButton) return;
+
+    unlockButton.addEventListener("click", unlockWorkflowEditing);
 }
 
 function bindWorkflowInputs() {
@@ -331,12 +402,41 @@ function bindWorkflowInputs() {
     });
 }
 
-function getWorkflowPin() {
-    const storedPin = window.sessionStorage.getItem(WORKFLOW_PIN_STORAGE_KEY);
-    if (storedPin) return storedPin;
+function unlockWorkflowEditing() {
+    if (isWorkflowUnlocked() || workflowUnlockRequestInFlight) return;
 
     const pin = window.prompt("Inserisci il PIN per modificare il workflow:");
-    return pin ? pin.trim() : "";
+    const normalizedPin = pin ? pin.trim() : "";
+
+    if (!normalizedPin) return;
+
+    const unlockButton = infoPanelBody.querySelector(".workflow-unlock-button");
+    workflowUnlockRequestInFlight = true;
+    unlockButton?.classList.add("is-checking");
+
+    workflowJsonpRequest({
+        action: "verifyPin",
+        pin: normalizedPin
+    })
+        .then(response => {
+            if (!response?.ok || response.verified !== true) {
+                throw new Error(response?.error || "PIN non valido.");
+            }
+
+            window.sessionStorage.setItem(WORKFLOW_PIN_STORAGE_KEY, normalizedPin);
+
+            if (isDiagramMode()) {
+                renderDiagramInfo();
+            }
+        })
+        .catch(error => {
+            clearWorkflowPin();
+            window.alert(error.message || "PIN non valido.");
+        })
+        .finally(() => {
+            workflowUnlockRequestInFlight = false;
+            unlockButton?.classList.remove("is-checking");
+        });
 }
 
 function clearWorkflowPin() {
@@ -344,6 +444,14 @@ function clearWorkflowPin() {
 }
 
 function updateWorkflowDataCell(row, col, value) {
+    if (row >= 4 && row <= 10 && col === WORKFLOW_SHEET_COLUMNS.fondo) {
+        const fondoItem = workflowData.fondo[row - 4];
+        if (fondoItem) {
+            fondoItem.value = value;
+        }
+        return;
+    }
+
     if (row >= 13 && row <= 23) {
         const assetRow = workflowData.assetRows[row - 13];
         if (!assetRow) return;
@@ -372,10 +480,11 @@ function saveWorkflowInput(input) {
         return;
     }
 
-    const pin = getWorkflowPin();
+    const pin = window.sessionStorage.getItem(WORKFLOW_PIN_STORAGE_KEY) || "";
 
     if (!pin) {
         input.value = previousValue;
+        window.alert("Sblocca prima il workflow con l'icona in alto a sinistra.");
         return;
     }
 
@@ -1418,10 +1527,12 @@ function renderDiagramInfo() {
         loadWorkflowDataFromSheet();
     }
 
-    const diagramMeta = currentWorkflowData.fondo.map((item) => `
+    const diagramMeta = currentWorkflowData.fondo.map((item, index) => `
         <div class="diagram-meta-pill">
             <span class="diagram-meta-pill-label">${escapeWorkflowText(item.label)}</span>
-            <strong class="diagram-meta-pill-value${item.value ? "" : " is-empty"}">${item.value ? escapeWorkflowText(getWorkflowDisplayValue(item.value)) : "&nbsp;"}</strong>
+            <strong class="diagram-meta-pill-value${item.value ? "" : " is-empty"}">
+                ${renderWorkflowMetaValue(item, index)}
+            </strong>
         </div>
     `).join("");
 
@@ -1469,6 +1580,8 @@ function renderDiagramInfo() {
 
     infoPanelBody.innerHTML = `
         <div class="diagram-board">
+            ${renderWorkflowUnlockButton()}
+
             <section class="diagram-strip">
                 <div class="diagram-strip-title">${escapeWorkflowText(currentWorkflowData.stripTitle)}</div>
                 <div class="diagram-strip-meta">
@@ -1506,6 +1619,7 @@ function renderDiagramInfo() {
         </div>
     `;
 
+    bindWorkflowUnlockButton();
     bindWorkflowInputs();
     openInfoPanel();
 }

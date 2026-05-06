@@ -2,6 +2,7 @@ const SHEET_NAME = "Workflow";
 const WORKFLOW_PIN = "CAMBIA-QUESTO-PIN";
 
 const COLUMN_KEYS = {
+  2: "fondo",
   3: "locati",
   4: "locare",
   5: "studentato",
@@ -26,6 +27,10 @@ function doGet(e) {
     return respond_(saveCell_(e.parameter), e.parameter.callback);
   }
 
+  if (action === "verifyPin") {
+    return respond_(verifyPin_(e.parameter), e.parameter.callback);
+  }
+
   return respond_(loadWorkflow_(), e.parameter.callback);
 }
 
@@ -34,6 +39,10 @@ function doPost(e) {
 
   if (body.action === "saveCell") {
     return respond_(saveCell_(body), body.callback);
+  }
+
+  if (body.action === "verifyPin") {
+    return respond_(verifyPin_(body), body.callback);
   }
 
   return respond_(loadWorkflow_(), body.callback);
@@ -98,11 +107,20 @@ function saveCell_(params) {
   };
 }
 
+function verifyPin_(params) {
+  if ((params.pin || "") !== WORKFLOW_PIN) {
+    return { ok: false, error: "PIN non valido." };
+  }
+
+  return { ok: true, verified: true };
+}
+
 function isEditableCell_(row, col) {
+  const isFondoCell = row >= 4 && row <= 10 && col === 2;
   const isAssetCell = row >= 13 && row <= 23 && (col === 3 || col === 4);
   const isTransformCell = row >= 25 && row <= 33 && col >= 5 && col <= 9;
 
-  return isAssetCell || isTransformCell;
+  return isFondoCell || isAssetCell || isTransformCell;
 }
 
 function normalizeValue_(value) {
