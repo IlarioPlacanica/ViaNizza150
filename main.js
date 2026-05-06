@@ -671,7 +671,6 @@ function formatDisplayedMq(entity) {
 }
 
 function closeInfoPanel() {
-    if (isDiagramMode()) return;
     infoPanel.classList.add("hidden");
 }
 

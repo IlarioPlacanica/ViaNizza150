@@ -460,7 +460,12 @@ body.diagram-mode .info-panel-header {
 }
 
 body.diagram-mode #closePanel {
-    display: none;
+    display: grid;
+    z-index: 2;
+}
+
+body.diagram-mode #infoPanelBody {
+    padding-top: 34px;
 }
 
 .diagram-board {
