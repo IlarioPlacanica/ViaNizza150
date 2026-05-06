@@ -56,9 +56,9 @@
         <button class="filter-inverted active" onclick="setActiveFilter(this); hideAllLotti(); closeInfoPanel()">NASCONDI TUTTI</button>
         <button onclick="setFilterAndShowCategory(this, 'rosso')">LOCATA</button>
         <button onclick="setFilterAndShowCategory(this, 'azzurro')">SFITTA LOCABILE</button>
-        <button onclick="setActiveFilter(this); showOnlyCategory('verde'); renderNonLocabileTotalInfo()">SFITTA NON LOCABILE</button>
+        <button onclick="setActiveFilter(this); showOnlyCategory('verde'); renderNonLocabileTotalInfo()">AREE COMUNI</button>
         <button onclick="setActiveFilter(this); showTransformabileLots(); renderTransformabileInfo()">SFITTA C.T. TRASFORMABILE</button>
-        <button onclick="setActiveFilter(this); renderPostiAutoInfo()">POSTI AUTO</button>
+        <button onclick="setActiveFilter(this); showPostiAutoLots(); renderPostiAutoInfo()">POSTI AUTO</button>
         <button onclick="activateDiagramFilter(this)">WORKFLOW</button>
         
     </div>
@@ -74,6 +74,6 @@
         <div id="infoPanelBody"></div>
     </div>
 
-    <script type="module" src="main.js?v=20260506-workflow-pin-refresh"></script>
+    <script type="module" src="main.js?v=20260506-workflow-preload-sheet"></script>
 </body>
 </html>

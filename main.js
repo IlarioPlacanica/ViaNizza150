@@ -157,6 +157,7 @@ const WORKFLOW_SHEET_COLUMNS = {
 let workflowData = cloneWorkflowData(DIAGRAM_DATA);
 let workflowDataLoaded = false;
 let workflowDataLoading = false;
+let workflowDataLoadFailed = false;
 let workflowRequestCounter = 0;
 let workflowUnlockRequestInFlight = false;
 let workflowEditorPin = "";
@@ -244,6 +245,7 @@ function loadWorkflowDataFromSheet() {
     if (workflowDataLoading) return;
 
     workflowDataLoading = true;
+    workflowDataLoadFailed = false;
 
     workflowJsonpRequest({ action: "load" })
         .then(response => {
@@ -253,16 +255,17 @@ function loadWorkflowDataFromSheet() {
 
             workflowData = normalizeWorkflowData(response.data);
             workflowDataLoaded = true;
+        })
+        .catch(error => {
+            console.warn("Workflow Sheet:", error);
+            workflowDataLoadFailed = true;
+        })
+        .finally(() => {
+            workflowDataLoading = false;
 
             if (isDiagramMode()) {
                 renderDiagramInfo();
             }
-        })
-        .catch(error => {
-            console.warn("Workflow Sheet:", error);
-        })
-        .finally(() => {
-            workflowDataLoading = false;
         });
 }
 
@@ -1417,6 +1420,11 @@ function renderPostiAutoInfo() {
     openInfoPanel();
 }
 
+function showPostiAutoLots() {
+    ensureStandardLayout();
+    showOnlyLotsByIds(["lotto Aree_Comuni", "lotto Aree_Comuni.1"]);
+}
+
 function renderDiagramInfoLegacy() {
     const items = getLotsByIds(DIAGRAM_LOT_IDS);
     const totalMq = items.reduce((sum, entity) => {
@@ -1518,14 +1526,26 @@ function renderDiagramInfo() {
     infoEyebrow.textContent = "";
     lotTitle.textContent = "";
 
+    if (!workflowDataLoaded) {
+        if (!workflowDataLoading && !workflowDataLoadFailed) {
+            loadWorkflowDataFromSheet();
+        }
+
+        if (!workflowDataLoadFailed) {
+            infoPanelBody.innerHTML = `
+                <div class="diagram-board">
+                    <p class="info-empty">Caricamento workflow...</p>
+                </div>
+            `;
+            openInfoPanel();
+            return;
+        }
+    }
+
     const currentWorkflowData = workflowData;
     const assetRows = currentWorkflowData.assetRows;
     const transformColumns = currentWorkflowData.transformColumns;
     const transformRows = currentWorkflowData.transformRows;
-
-    if (!workflowDataLoaded && !workflowDataLoading) {
-        loadWorkflowDataFromSheet();
-    }
 
     const diagramMeta = currentWorkflowData.fondo.map((item, index) => `
         <div class="diagram-meta-pill">
@@ -1655,6 +1675,10 @@ function activateDiagramFilter(button) {
 
     currentLayoutMode = "diagram";
     document.body.classList.add("diagram-mode");
+
+    if (!workflowDataLoaded && workflowDataLoadFailed) {
+        workflowDataLoadFailed = false;
+    }
 
     showOnlyLotsByIds(DIAGRAM_LOT_IDS);
     renderDiagramInfo();
@@ -1838,6 +1862,7 @@ window.closeInfoPanel = closeInfoPanel;
 window.renderTotalSurfaceInfo = renderTotalSurfaceInfo;
 window.renderNonLocabileTotalInfo = renderNonLocabileTotalInfo;
 window.renderPostiAutoInfo = renderPostiAutoInfo;
+window.showPostiAutoLots = showPostiAutoLots;
 window.showTransformabileLots = showTransformabileLots;
 window.renderTransformabileInfo = renderTransformabileInfo;
 window.activateDiagramFilter = activateDiagramFilter;
@@ -2571,3 +2596,4 @@ drawHandler.setInputAction((movement) => {
 
 // stato iniziale
 hideAllLotti();
+loadWorkflowDataFromSheet();
