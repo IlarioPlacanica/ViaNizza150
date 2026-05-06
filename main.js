@@ -123,8 +123,8 @@ const DIAGRAM_DATA = {
     ],
     transformColumns: [
         { key: "studentato", title: "Studentato", surfaceClass: "diagram-matrix-surface--yellow" },
-        { key: "sanitario", title: "Sanitario", surfaceClass: "diagram-matrix-surface--blue" },
         { key: "businessHotel", title: "Business Hotel", surfaceClass: "diagram-matrix-surface--red" },
+        { key: "sanitario", title: "Sanitario", surfaceClass: "diagram-matrix-surface--blue" },
         { key: "areeComuni", title: "Aree comuni" },
         { key: "ufficiSfittiDaLocare", title: "Uffici sfitti da locare" }
     ],
@@ -140,6 +140,284 @@ const DIAGRAM_DATA = {
         { label: "Sviluppatore", studentato: "-", sanitario: "-", businessHotel: "-", areeComuni: "-", ufficiSfittiDaLocare: "-" }
     ]
 };
+
+const WORKFLOW_API_URL = "https://script.google.com/macros/s/AKfycbxWBmBAYcOLhjnKLwJpRlYS_SVUZG-GhzR8BZ11Mh1lNK4CM-nTcfnqR5kv7xelwwE/exec";
+const WORKFLOW_PIN_STORAGE_KEY = "viaNizzaWorkflowPin";
+const WORKFLOW_REQUEST_TIMEOUT = 12000;
+const WORKFLOW_SHEET_COLUMNS = {
+    locati: 3,
+    locare: 4,
+    studentato: 5,
+    businessHotel: 6,
+    sanitario: 7,
+    areeComuni: 8,
+    ufficiSfittiDaLocare: 9
+};
+
+let workflowData = cloneWorkflowData(DIAGRAM_DATA);
+let workflowDataLoaded = false;
+let workflowDataLoading = false;
+let workflowRequestCounter = 0;
+
+function cloneWorkflowData(data) {
+    return {
+        stripTitle: data.stripTitle,
+        fondo: data.fondo.map(item => ({ ...item })),
+        assetRows: data.assetRows.map((row, index) => ({
+            ...row,
+            sheetRow: row.sheetRow || index + 13
+        })),
+        transformColumns: DIAGRAM_DATA.transformColumns.map(column => ({ ...column })),
+        transformRows: data.transformRows.map((row, index) => ({
+            ...row,
+            sheetRow: row.sheetRow || index + 25
+        }))
+    };
+}
+
+function normalizeWorkflowData(data) {
+    const fallback = cloneWorkflowData(DIAGRAM_DATA);
+
+    return {
+        stripTitle: data?.stripTitle || fallback.stripTitle,
+        fondo: Array.isArray(data?.fondo) && data.fondo.length ? data.fondo.map(item => ({ ...item })) : fallback.fondo,
+        assetRows: Array.isArray(data?.assetRows) && data.assetRows.length
+            ? data.assetRows.map((row, index) => ({
+                ...row,
+                sheetRow: row.sheetRow || index + 13
+            }))
+            : fallback.assetRows,
+        transformColumns: fallback.transformColumns,
+        transformRows: Array.isArray(data?.transformRows) && data.transformRows.length
+            ? data.transformRows.map((row, index) => ({
+                ...row,
+                sheetRow: row.sheetRow || index + 25
+            }))
+            : fallback.transformRows
+    };
+}
+
+function workflowJsonpRequest(params = {}) {
+    return new Promise((resolve, reject) => {
+        const callbackName = `workflowSheetCallback_${Date.now()}_${workflowRequestCounter++}`;
+        const url = new URL(WORKFLOW_API_URL);
+        const script = document.createElement("script");
+        let timeoutId = 0;
+
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                url.searchParams.set(key, value);
+            }
+        });
+        url.searchParams.set("callback", callbackName);
+        url.searchParams.set("_", Date.now());
+
+        const cleanup = () => {
+            window.clearTimeout(timeoutId);
+            delete window[callbackName];
+            script.remove();
+        };
+
+        window[callbackName] = (payload) => {
+            cleanup();
+            resolve(payload);
+        };
+
+        script.onerror = () => {
+            cleanup();
+            reject(new Error("Impossibile raggiungere Google Sheet."));
+        };
+
+        timeoutId = window.setTimeout(() => {
+            cleanup();
+            reject(new Error("Google Sheet non ha risposto in tempo."));
+        }, WORKFLOW_REQUEST_TIMEOUT);
+
+        script.src = url.toString();
+        document.body.appendChild(script);
+    });
+}
+
+function loadWorkflowDataFromSheet() {
+    if (workflowDataLoading) return;
+
+    workflowDataLoading = true;
+
+    workflowJsonpRequest({ action: "load" })
+        .then(response => {
+            if (!response?.ok || !response.data) {
+                throw new Error(response?.error || "Dati workflow non disponibili.");
+            }
+
+            workflowData = normalizeWorkflowData(response.data);
+            workflowDataLoaded = true;
+
+            if (isDiagramMode()) {
+                renderDiagramInfo();
+            }
+        })
+        .catch(error => {
+            console.warn("Workflow Sheet:", error);
+        })
+        .finally(() => {
+            workflowDataLoading = false;
+        });
+}
+
+function escapeWorkflowText(value) {
+    return String(value ?? "")
+        .replace(/&euro;/g, "€")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function getWorkflowDisplayValue(value) {
+    const normalized = value === undefined || value === null || value === "" ? "-" : value;
+    return String(normalized).replace(/&euro;/g, "€");
+}
+
+function renderWorkflowInput(value, row, col, rowLabel, columnTitle, key) {
+    const displayValue = getWorkflowDisplayValue(value);
+    const ariaLabel = `${rowLabel} ${columnTitle}`;
+
+    return `
+        <input
+            class="workflow-value-input"
+            type="text"
+            value="${escapeWorkflowText(displayValue)}"
+            data-workflow-row="${row}"
+            data-workflow-col="${col}"
+            data-workflow-key="${escapeWorkflowText(key)}"
+            data-workflow-previous="${escapeWorkflowText(displayValue)}"
+            aria-label="${escapeWorkflowText(ariaLabel)}"
+            autocomplete="off"
+            spellcheck="false"
+        >
+    `;
+}
+
+function renderWorkflowValueCell(value, row, col, rowLabel, columnTitle, key, dividerClass, gridColumn, gridRow) {
+    return `
+        <div class="diagram-matrix-value diagram-matrix-value-editable${dividerClass}" style="grid-column: ${gridColumn}; grid-row: ${gridRow};">
+            ${renderWorkflowInput(value, row, col, rowLabel, columnTitle, key)}
+        </div>
+    `;
+}
+
+function bindWorkflowInputs() {
+    infoPanelBody.querySelectorAll(".workflow-value-input").forEach(input => {
+        input.addEventListener("focus", () => {
+            input.dataset.workflowPrevious = input.value;
+        });
+
+        input.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                input.blur();
+            }
+
+            if (event.key === "Escape") {
+                input.value = input.dataset.workflowPrevious || "";
+                input.blur();
+            }
+        });
+
+        input.addEventListener("blur", () => {
+            saveWorkflowInput(input);
+        });
+    });
+}
+
+function getWorkflowPin() {
+    const storedPin = window.sessionStorage.getItem(WORKFLOW_PIN_STORAGE_KEY);
+    if (storedPin) return storedPin;
+
+    const pin = window.prompt("Inserisci il PIN per modificare il workflow:");
+    return pin ? pin.trim() : "";
+}
+
+function clearWorkflowPin() {
+    window.sessionStorage.removeItem(WORKFLOW_PIN_STORAGE_KEY);
+}
+
+function updateWorkflowDataCell(row, col, value) {
+    if (row >= 13 && row <= 23) {
+        const assetRow = workflowData.assetRows[row - 13];
+        if (!assetRow) return;
+
+        if (col === WORKFLOW_SHEET_COLUMNS.locati) assetRow.locati = value;
+        if (col === WORKFLOW_SHEET_COLUMNS.locare) assetRow.locare = value;
+        return;
+    }
+
+    if (row >= 25 && row <= 33) {
+        const transformRow = workflowData.transformRows[row - 25];
+        const key = Object.entries(WORKFLOW_SHEET_COLUMNS).find(([, sheetCol]) => sheetCol === col)?.[0];
+
+        if (transformRow && key) {
+            transformRow[key] = value;
+        }
+    }
+}
+
+function saveWorkflowInput(input) {
+    const previousValue = input.dataset.workflowPrevious || "";
+    const nextValue = input.value.trim() || "-";
+
+    if (nextValue === previousValue) {
+        input.value = nextValue;
+        return;
+    }
+
+    const pin = getWorkflowPin();
+
+    if (!pin) {
+        input.value = previousValue;
+        return;
+    }
+
+    const row = Number(input.dataset.workflowRow);
+    const col = Number(input.dataset.workflowCol);
+
+    input.disabled = true;
+    input.classList.add("is-saving");
+
+    workflowJsonpRequest({
+        action: "saveCell",
+        row,
+        col,
+        value: nextValue,
+        pin
+    })
+        .then(response => {
+            if (!response?.ok) {
+                if ((response?.error || "").toLowerCase().includes("pin")) {
+                    clearWorkflowPin();
+                }
+
+                throw new Error(response?.error || "Salvataggio non riuscito.");
+            }
+
+            const savedValue = getWorkflowDisplayValue(response.value || nextValue);
+            window.sessionStorage.setItem(WORKFLOW_PIN_STORAGE_KEY, pin);
+            input.value = savedValue;
+            input.dataset.workflowPrevious = savedValue;
+            updateWorkflowDataCell(row, col, savedValue);
+            input.classList.add("is-saved");
+            window.setTimeout(() => input.classList.remove("is-saved"), 900);
+        })
+        .catch(error => {
+            input.value = previousValue;
+            window.alert(error.message || "Salvataggio non riuscito.");
+        })
+        .finally(() => {
+            input.disabled = false;
+            input.classList.remove("is-saving");
+        });
+}
 
 // =========================
 // CAMERA ORBITALE
@@ -1131,43 +1409,58 @@ function renderDiagramInfo() {
     infoEyebrow.textContent = "";
     lotTitle.textContent = "";
 
-    const assetRows = DIAGRAM_DATA.assetRows;
-    const transformColumns = DIAGRAM_DATA.transformColumns;
-    const transformRows = DIAGRAM_DATA.transformRows;
+    const currentWorkflowData = workflowData;
+    const assetRows = currentWorkflowData.assetRows;
+    const transformColumns = currentWorkflowData.transformColumns;
+    const transformRows = currentWorkflowData.transformRows;
 
-    const diagramMeta = DIAGRAM_DATA.fondo.map((item) => `
+    if (!workflowDataLoaded && !workflowDataLoading) {
+        loadWorkflowDataFromSheet();
+    }
+
+    const diagramMeta = currentWorkflowData.fondo.map((item) => `
         <div class="diagram-meta-pill">
-            <span class="diagram-meta-pill-label">${item.label}</span>
-            <strong class="diagram-meta-pill-value${item.value ? "" : " is-empty"}">${item.value || "&nbsp;"}</strong>
+            <span class="diagram-meta-pill-label">${escapeWorkflowText(item.label)}</span>
+            <strong class="diagram-meta-pill-value${item.value ? "" : " is-empty"}">${item.value ? escapeWorkflowText(getWorkflowDisplayValue(item.value)) : "&nbsp;"}</strong>
         </div>
     `).join("");
 
     const assetRowsHtml = assetRows.map((row, index) => {
         const dividerClass = index === 0 ? "" : " diagram-matrix-divider";
         const gridRow = index + 2;
+        const sheetRow = row.sheetRow || index + 13;
 
         return `
-            <div class="diagram-label${dividerClass}" style="grid-column: 1; grid-row: ${gridRow};">${row.label}</div>
-            <div class="diagram-matrix-value${dividerClass}" style="grid-column: 2; grid-row: ${gridRow};">${row.locati}</div>
-            <div class="diagram-matrix-value${dividerClass}" style="grid-column: 3; grid-row: ${gridRow};">${row.locare}</div>
+            <div class="diagram-label${dividerClass}" style="grid-column: 1; grid-row: ${gridRow};">${escapeWorkflowText(row.label)}</div>
+            ${renderWorkflowValueCell(row.locati, sheetRow, WORKFLOW_SHEET_COLUMNS.locati, row.label, "Asset locati", "locati", dividerClass, 2, gridRow)}
+            ${renderWorkflowValueCell(row.locare, sheetRow, WORKFLOW_SHEET_COLUMNS.locare, row.label, "Asset da locare", "locare", dividerClass, 3, gridRow)}
         `;
     }).join("");
 
     const transformRowsHtml = transformRows.map((row, index) => {
         const dividerClass = index === 0 ? "" : " diagram-matrix-divider";
         const gridRow = index + 2;
-        const valueCells = transformColumns.map((column, columnIndex) => `
-            <div class="diagram-matrix-value${dividerClass}" style="grid-column: ${columnIndex + 2}; grid-row: ${gridRow};">${row[column.key]}</div>
-        `).join("");
+        const sheetRow = row.sheetRow || index + 25;
+        const valueCells = transformColumns.map((column, columnIndex) => renderWorkflowValueCell(
+            row[column.key],
+            sheetRow,
+            WORKFLOW_SHEET_COLUMNS[column.key],
+            row.label,
+            column.title,
+            column.key,
+            dividerClass,
+            columnIndex + 2,
+            gridRow
+        )).join("");
 
         return `
-            <div class="diagram-label${dividerClass}" style="grid-column: 1; grid-row: ${gridRow};">${row.label}</div>
+            <div class="diagram-label${dividerClass}" style="grid-column: 1; grid-row: ${gridRow};">${escapeWorkflowText(row.label)}</div>
             ${valueCells}
         `;
     }).join("");
 
     const transformTitlesHtml = transformColumns.map((column, index) => `
-        <div class="diagram-matrix-title" style="grid-column: ${index + 2}; grid-row: 1;">${column.title}</div>
+        <div class="diagram-matrix-title" style="grid-column: ${index + 2}; grid-row: 1;">${escapeWorkflowText(column.title)}</div>
     `).join("");
 
     const transformSurfacesHtml = transformColumns.map((column, index) => `
@@ -1177,7 +1470,7 @@ function renderDiagramInfo() {
     infoPanelBody.innerHTML = `
         <div class="diagram-board">
             <section class="diagram-strip">
-                <div class="diagram-strip-title">${DIAGRAM_DATA.stripTitle}</div>
+                <div class="diagram-strip-title">${escapeWorkflowText(currentWorkflowData.stripTitle)}</div>
                 <div class="diagram-strip-meta">
                     ${diagramMeta}
                 </div>
@@ -1213,6 +1506,7 @@ function renderDiagramInfo() {
         </div>
     `;
 
+    bindWorkflowInputs();
     openInfoPanel();
 }
 

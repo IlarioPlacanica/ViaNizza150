@@ -668,6 +668,50 @@ body.diagram-mode #infoPanelBody {
     overflow-wrap: anywhere;
 }
 
+.diagram-matrix-value-editable {
+    padding: 0 4px;
+}
+
+.workflow-value-input {
+    width: 100%;
+    min-width: 0;
+    min-height: 28px;
+    padding: 4px 7px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.045);
+    color: var(--text-main);
+    font: inherit;
+    line-height: 1.22;
+    text-align: left;
+    outline: none;
+    transition: background var(--transition), border-color var(--transition), box-shadow var(--transition), opacity var(--transition);
+}
+
+    .workflow-value-input:hover {
+        background: rgba(255, 255, 255, 0.075);
+        border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .workflow-value-input:focus {
+        background: rgba(255, 255, 255, 0.11);
+        border-color: rgba(255, 255, 255, 0.32);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+    }
+
+    .workflow-value-input.is-saving {
+        opacity: 0.55;
+    }
+
+    .workflow-value-input.is-saved {
+        border-color: rgba(78, 221, 154, 0.85);
+    }
+
+.diagram-section-transform .workflow-value-input {
+    text-align: center;
+}
+
 .diagram-section-transform .diagram-matrix-title {
     margin: 0 6px;
     padding: 8px 4px 7px;
