@@ -161,6 +161,8 @@ let workflowDataLoadFailed = false;
 let workflowRequestCounter = 0;
 let workflowUnlockRequestInFlight = false;
 let workflowEditorPin = "";
+let workflowFullscreenActive = false;
+let workflowPanelAnimation = null;
 
 function cloneWorkflowData(data) {
     return {
@@ -346,6 +348,58 @@ function renderWorkflowUnlockButton() {
     `;
 }
 
+function getWorkflowFullscreenIcon() {
+    if (workflowFullscreenActive) {
+        return `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 4H4v5"></path>
+                <path d="M15 4h5v5"></path>
+                <path d="M20 15v5h-5"></path>
+                <path d="M4 15v5h5"></path>
+            </svg>
+        `;
+    }
+
+    return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 4H4v5"></path>
+            <path d="M4 4l6 6"></path>
+            <path d="M15 4h5v5"></path>
+            <path d="M20 4l-6 6"></path>
+            <path d="M20 15v5h-5"></path>
+            <path d="M20 20l-6-6"></path>
+            <path d="M4 15v5h5"></path>
+            <path d="M4 20l6-6"></path>
+        </svg>
+    `;
+}
+
+function renderWorkflowFullscreenButton() {
+    const label = workflowFullscreenActive
+        ? "Riduci workflow"
+        : "Apri workflow a schermo intero";
+
+    return `
+        <button
+            type="button"
+            class="workflow-fullscreen-button${workflowFullscreenActive ? " is-active" : ""}"
+            aria-label="${label}"
+            title="${label}"
+        >
+            ${getWorkflowFullscreenIcon()}
+        </button>
+    `;
+}
+
+function renderWorkflowPanelActions() {
+    return `
+        <div class="workflow-panel-actions">
+            ${renderWorkflowUnlockButton()}
+            ${renderWorkflowFullscreenButton()}
+        </div>
+    `;
+}
+
 function renderWorkflowValueCell(value, row, col, rowLabel, columnTitle, key, dividerClass, gridColumn, gridRow) {
     return `
         <div class="diagram-matrix-value diagram-matrix-value-editable${dividerClass}" style="grid-column: ${gridColumn}; grid-row: ${gridRow};">
@@ -379,6 +433,117 @@ function bindWorkflowUnlockButton() {
     if (!unlockButton) return;
 
     unlockButton.addEventListener("click", unlockWorkflowEditing);
+}
+
+function applyWorkflowFullscreenState() {
+    document.body.classList.toggle(
+        "workflow-panel-fullscreen",
+        isDiagramMode() && workflowFullscreenActive
+    );
+}
+
+function stopWorkflowPanelAnimation() {
+    if (workflowPanelAnimation) {
+        workflowPanelAnimation.cancel();
+        workflowPanelAnimation = null;
+    }
+
+    infoPanel.classList.remove("workflow-panel-animating");
+    infoPanel.style.transformOrigin = "";
+    infoPanel.style.willChange = "";
+}
+
+function animateWorkflowPanelLayoutChange(applyChange) {
+    stopWorkflowPanelAnimation();
+
+    if (!isDiagramMode()) {
+        applyChange();
+        return;
+    }
+
+    infoPanel.classList.add("workflow-panel-animating");
+
+    const firstRect = infoPanel.getBoundingClientRect();
+    applyChange();
+    const lastRect = infoPanel.getBoundingClientRect();
+
+    const translateX = firstRect.left - lastRect.left;
+    const translateY = firstRect.top - lastRect.top;
+    const scaleX = firstRect.width / Math.max(lastRect.width, 1);
+    const scaleY = firstRect.height / Math.max(lastRect.height, 1);
+
+    if (
+        Math.abs(translateX) < 0.5 &&
+        Math.abs(translateY) < 0.5 &&
+        Math.abs(scaleX - 1) < 0.001 &&
+        Math.abs(scaleY - 1) < 0.001
+    ) {
+        stopWorkflowPanelAnimation();
+        return;
+    }
+
+    infoPanel.style.transformOrigin = "top left";
+    infoPanel.style.willChange = "transform";
+
+    workflowPanelAnimation = infoPanel.animate(
+        [
+            {
+                transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`
+            },
+            {
+                transform: "translate(0px, 0px) scale(1, 1)"
+            }
+        ],
+        {
+            duration: 420,
+            easing: "linear",
+            fill: "both"
+        }
+    );
+
+    workflowPanelAnimation.finished
+        .catch(() => {})
+        .finally(() => {
+            workflowPanelAnimation = null;
+            stopWorkflowPanelAnimation();
+        });
+}
+
+function updateWorkflowFullscreenButton(button) {
+    if (!button) return;
+
+    const label = workflowFullscreenActive
+        ? "Riduci workflow"
+        : "Apri workflow a schermo intero";
+
+    button.classList.toggle("is-active", workflowFullscreenActive);
+    button.setAttribute("aria-label", label);
+    button.setAttribute("title", label);
+    button.innerHTML = getWorkflowFullscreenIcon();
+}
+
+function toggleWorkflowFullscreen() {
+    if (!isDiagramMode()) return;
+
+    animateWorkflowPanelLayoutChange(() => {
+        workflowFullscreenActive = !workflowFullscreenActive;
+        applyWorkflowFullscreenState();
+        updateWorkflowFullscreenButton(
+            infoPanelBody.querySelector(".workflow-fullscreen-button")
+        );
+    });
+}
+
+function bindWorkflowFullscreenButton() {
+    const fullscreenButton = infoPanelBody.querySelector(".workflow-fullscreen-button");
+    if (!fullscreenButton) return;
+
+    fullscreenButton.addEventListener("click", toggleWorkflowFullscreen);
+}
+
+function bindWorkflowPanelButtons() {
+    bindWorkflowUnlockButton();
+    bindWorkflowFullscreenButton();
 }
 
 function bindWorkflowInputs() {
@@ -995,8 +1160,11 @@ function focusDiagramCamera() {
 function exitDiagramMode() {
     if (!isDiagramMode()) return;
 
+    stopWorkflowPanelAnimation();
     currentLayoutMode = "default";
     document.body.classList.remove("diagram-mode");
+    document.body.classList.remove("workflow-panel-fullscreen");
+    workflowFullscreenActive = false;
 
     if (savedStandardOrbitState) {
         animateOrbitToState(savedStandardOrbitState, 1050, 0);
@@ -1534,9 +1702,12 @@ function renderDiagramInfo() {
         if (!workflowDataLoadFailed) {
             infoPanelBody.innerHTML = `
                 <div class="diagram-board">
+                    ${renderWorkflowPanelActions()}
                     <p class="info-empty">Caricamento workflow...</p>
                 </div>
             `;
+            bindWorkflowPanelButtons();
+            applyWorkflowFullscreenState();
             openInfoPanel();
             return;
         }
@@ -1600,7 +1771,7 @@ function renderDiagramInfo() {
 
     infoPanelBody.innerHTML = `
         <div class="diagram-board">
-            ${renderWorkflowUnlockButton()}
+            ${renderWorkflowPanelActions()}
 
             <section class="diagram-strip">
                 <div class="diagram-strip-title">${escapeWorkflowText(currentWorkflowData.stripTitle)}</div>
@@ -1639,8 +1810,9 @@ function renderDiagramInfo() {
         </div>
     `;
 
-    bindWorkflowUnlockButton();
+    bindWorkflowPanelButtons();
     bindWorkflowInputs();
+    applyWorkflowFullscreenState();
     openInfoPanel();
 }
 
